@@ -1,0 +1,1507 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101010">
+<title>NOM — Journey Beyond</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
+
+<style>
+:root {
+  --bg:#101010;
+  --panel:#1b1b1b;
+  --panel2:#242424;
+  --orange:#ff7a24;
+  --lime:#c8f45a;
+  --white:#f5f5f5;
+  --muted:#999;
+  --border:#303030;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--white);
+  font-family:Arial,Helvetica,sans-serif;
+  padding-bottom:90px;
+}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+header{
+  padding:22px 20px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.logo{
+  font-size:27px;
+  font-weight:900;
+  letter-spacing:4px;
+}
+.logo span{color:var(--orange)}
+.header-account{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  max-width:190px;
+  min-width:0;
+  background:var(--panel2);
+  color:var(--orange);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:5px 11px 5px 6px;
+  font-size:12px;
+  font-weight:bold;
+  letter-spacing:.2px;
+}
+.header-account-label{max-width:125px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-account-avatar,.header-account-fallback{width:30px;height:30px;min-width:30px;border-radius:50%;object-fit:cover;border:1px solid var(--orange);background:#292929}
+.header-account-fallback{display:inline-flex;align-items:center;justify-content:center;color:var(--lime);font-size:11px;font-weight:900}
+.header-account-avatar.hidden,.header-account-fallback.hidden{display:none!important}
+@media(max-width:380px){.header-account{max-width:155px}.header-account-label{max-width:90px}}
+main{padding:10px 18px;max-width:760px;margin:auto}
+h1{font-size:29px;line-height:1.15;margin:10px 0}
+h2{font-size:21px;margin:25px 0 14px}
+h3{margin:8px 0}
+p{color:var(--muted);line-height:1.5}
+.eyebrow{
+  color:var(--orange);
+  font-size:11px;
+  font-weight:bold;
+  letter-spacing:2px;
+}
+.hero{
+  background:linear-gradient(135deg,#292019,#171717 65%);
+  border:1px solid #493020;
+  border-radius:22px;
+  padding:27px 22px;
+  margin:12px 0 25px;
+}
+.hero h1{font-size:34px;max-width:300px}
+.hero p{max-width:300px}
+.tagline{color:var(--lime);font-size:12px;letter-spacing:1px}
+.primary{
+  background:var(--orange);
+  color:#111;
+  border:0;
+  border-radius:30px;
+  padding:12px 19px;
+  font-weight:bold;
+}
+.secondary{
+  background:var(--panel2);
+  color:var(--white);
+  border:1px solid var(--border);
+  border-radius:30px;
+  padding:11px 17px;
+}
+.text-button{
+  border:0;background:none;color:var(--orange);padding:8px 0;
+}
+.search{
+  width:100%;
+  padding:14px 16px;
+  background:var(--panel);
+  color:white;
+  border:1px solid var(--border);
+  border-radius:14px;
+  margin:8px 0 15px;
+}
+.categories{
+  display:flex;
+  gap:9px;
+  overflow-x:auto;
+  padding:4px 0 12px;
+}
+.category{
+  white-space:nowrap;
+  padding:10px 15px;
+  border-radius:25px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  color:var(--white);
+}
+.category.active{background:var(--lime);color:#111;border-color:var(--lime)}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.place{cursor:pointer}.community-post{cursor:pointer}
+.detail-overlay{position:fixed!important;inset:0!important;width:100vw;height:100vh;height:100dvh;min-height:100vh;z-index:99999;background:#101010;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:none;visibility:hidden}.detail-overlay.open{display:block!important;visibility:visible!important}.detail-topbar{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 18px;background:#101010ed;border-bottom:1px solid var(--border)}.detail-back{display:flex;align-items:center;gap:7px;min-width:72px;background:transparent;border:0;color:var(--white);font-size:16px;padding:8px 0}.detail-back span{font-size:13px}.detail-close{width:42px;height:42px;border-radius:50%;background:var(--panel2);color:white;border:1px solid var(--border);font-size:23px}.detail-body{max-width:760px;margin:auto;padding-bottom:40px}.detail-gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:5px}.detail-gallery img{width:100%;min-width:100%;height:min(68vh,560px);object-fit:cover;scroll-snap-align:center}.detail-copy{padding:22px 20px}.detail-copy h1{font-size:30px}.detail-location{color:var(--lime);font-size:13px}.detail-description{color:#ddd;font-size:15px;line-height:1.7;white-space:pre-wrap}.detail-credit{font-size:11px;color:var(--muted)}
+.place{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:17px;
+  overflow:hidden;
+}
+.place-image{
+  height:150px;
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(135deg,#4b3425,#1e2926);
+}
+.place-video-preview{display:block;width:100%;max-height:190px;object-fit:contain;background:#080808;border-radius:10px;margin:7px 0}.place-image img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+.place-rating{
+  position:absolute;
+  right:9px;
+  top:9px;
+  background:#111c;
+  color:var(--lime);
+  border:1px solid #ffffff22;
+  border-radius:20px;
+  padding:5px 8px;
+  font-size:11px;
+  font-weight:700;
+}
+.place-content{padding:12px}
+.place-content p{font-size:12px;margin:5px 0}
+.place-meta{color:var(--lime);font-size:11px}
+.save-button{
+  background:transparent;
+  color:var(--orange);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:7px 11px;
+  margin-top:9px;
+}
+.feed-card,.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:17px;
+  padding:17px;
+  margin:12px 0;
+}
+.feed-card p{margin-bottom:8px}
+.form-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:20px;
+  margin:15px 0;
+}
+.form-card input,.form-card textarea{
+  width:100%;
+  background:#111;
+  color:white;
+  border:1px solid var(--border);
+  border-radius:11px;
+  padding:13px;
+  margin:7px 0 13px;
+}
+.form-card label{font-size:12px;color:var(--muted)}
+.form-card button{margin:8px 5px 5px 0}
+.avatar-upload{display:flex;flex-direction:column;gap:9px;margin:12px 0 16px}.avatar-preview{width:82px;height:82px;border-radius:50%;object-fit:cover;border:2px solid var(--orange);background:#242424}.account-avatar{width:76px;height:76px;border-radius:50%;object-fit:cover;border:2px solid var(--orange);margin:4px 0 10px}
+.message{font-size:13px;min-height:20px;color:var(--lime)}
+.bottom-nav{
+  position:fixed;
+  z-index:10;
+  bottom:0;left:0;right:0;
+  background:#171717;
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:space-around;
+  padding:11px 3px calc(11px + env(safe-area-inset-bottom));
+}
+.nav-item{
+  background:none;
+  border:0;
+  color:var(--muted);
+  font-size:10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+}
+.nav-item span{font-size:19px}
+.nav-item.active{color:var(--orange)}
+.hidden{display:none!important}
+.small{font-size:12px;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--border);margin:18px 0}
+.community-upload input,.community-upload textarea,.community-upload select{width:100%;background:#111;color:white;border:1px solid var(--border);border-radius:11px;padding:13px;margin:7px 0 13px}
+.community-upload input[type=file]{padding:11px;font-size:12px}
+.community-post{background:var(--panel);border:1px solid var(--border);border-radius:17px;padding:14px;margin:12px 0;overflow:hidden}
+.community-post img,.community-post video{width:100%;max-height:300px;object-fit:cover;border-radius:12px;display:block}.community-post video{background:#080808}
+.community-post .post-meta{font-size:11px;color:var(--lime);margin:9px 0 4px}
+.community-post .post-author{font-size:12px;color:var(--orange)}
+.community-post .post-status{font-size:11px;color:var(--lime);margin-top:8px}
+@media(max-width:380px){
+  .cards{grid-template-columns:1fr}
+  .hero h1{font-size:29px}
+}
+.work-intro{background:linear-gradient(135deg,#2a201a,#191919);border:1px solid #493020;border-radius:20px;padding:20px;margin:12px 0}.work-demo{background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin:14px 0}.work-cover{height:175px;position:relative}.work-cover>img{width:100%;height:100%;object-fit:cover}.work-avatar{width:64px!important;height:64px!important;border-radius:50%;border:3px solid var(--panel);position:absolute;bottom:-22px;left:15px}.work-demo-body{padding:28px 15px 15px}.work-role{font-size:11px;color:var(--lime);letter-spacing:1.4px;font-weight:bold}.work-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.work-tag{font-size:11px;background:#292929;border:1px solid var(--border);border-radius:20px;padding:6px 9px}.work-gallery{display:grid;grid-template-columns:1fr 1fr;gap:7px}.work-gallery img{width:100%;height:140px;object-fit:cover;border-radius:9px}.work-field{width:100%;background:#111;color:white;border:1px solid var(--border);border-radius:11px;padding:13px;margin:7px 0 13px}.work-media-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px;margin:10px 0}.work-media-card img,.work-media-card video{width:100%;max-height:260px;object-fit:cover;border-radius:9px}.work-media-card audio{width:100%}.work-progress{height:7px;background:#333;border-radius:9px;overflow:hidden}.work-progress span{display:block;height:100%;width:0;background:var(--lime)}.nom-work-entry{cursor:pointer;transition:transform .18s ease,border-color .18s ease}.nom-work-entry:active{transform:scale(.985)}.nom-work-entry:focus-visible{outline:2px solid var(--lime);outline-offset:3px}.work-member-card{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:15px;margin:10px 0;cursor:pointer}.work-member-card:active{border-color:var(--orange)}.work-member-identity{color:var(--lime);font-size:13px;font-weight:bold}.nom-identity-row{display:inline-flex;align-items:center;gap:9px;min-width:0;vertical-align:middle}.nom-member-avatar{width:34px;height:34px;min-width:34px;border-radius:50%;object-fit:cover;border:1px solid var(--orange);background:#292929;display:inline-block}.nom-member-avatar.compact{width:28px;height:28px;min-width:28px}.nom-chat-identity{display:flex;align-items:center;gap:10px}.nom-chat-identity .nom-member-avatar{width:38px;height:38px;min-width:38px}.work-member-card h3{margin:7px 0}.work-member-card p{font-size:13px;margin:6px 0}.work-portfolio-view{border:1px solid var(--orange);border-radius:18px;padding:17px;margin:16px 0;background:#191613}.work-portfolio-view .work-media-card{margin:12px 0}.work-card-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.work-card-actions button{margin:0}.work-expandable{cursor:zoom-in}.work-lightbox{position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,.97);display:flex;align-items:center;justify-content:center;padding:18px}.work-lightbox.hidden{display:none}.work-lightbox img,.work-lightbox video{max-width:100%;max-height:88vh;object-fit:contain;border-radius:8px}.work-lightbox-close{position:absolute;top:calc(env(safe-area-inset-top) + 12px);right:14px;width:44px;height:44px;border-radius:50%;border:1px solid #666;background:#222;color:#fff;font-size:26px}.nom-chat-overlay{position:fixed;inset:0;z-index:11900;background:#101010;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 12px)}.nom-chat-overlay.hidden{display:none}.nom-chat-top{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:12px}.nom-chat-messages{flex:1;overflow:auto;padding:14px 2px;display:flex;flex-direction:column;gap:10px}.nom-chat-bubble{max-width:84%;padding:10px 13px;border-radius:15px;background:#292929;align-self:flex-start;overflow-wrap:anywhere}.nom-chat-bubble.mine{background:#49301e;align-self:flex-end}.nom-chat-bubble small{display:block;color:#bbb;font-size:10px;margin-top:5px}.nom-chat-compose{display:flex;gap:8px;align-items:flex-end}.nom-chat-compose textarea{flex:1;min-height:48px;max-height:120px;background:#181818;color:white;border:1px solid var(--border);border-radius:12px;padding:12px}.nom-inbox-item{padding:12px 0;border-bottom:1px solid var(--border)}.nom-unread-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;margin-left:7px;border-radius:12px;background:var(--orange);color:#111;font-size:11px;font-weight:800;vertical-align:middle}.nom-unread-badge.hidden{display:none}.nom-inbox-item.has-unread strong{color:var(--lime)}.nom-inbox-item .nom-unread-label{display:inline-block;margin-left:7px;color:var(--orange);font-size:11px;font-weight:bold}/* NOM UNIVERSAL SEARCH */
+.nom-universal-search{background:#151515;border:1px solid var(--border);border-radius:17px;padding:13px;margin:4px 0 18px}
+.nom-search-tabs{display:flex;gap:7px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.nom-search-tabs::-webkit-scrollbar{display:none}
+.nom-search-tab{flex:0 0 auto;border:1px solid var(--border);background:var(--panel2);color:var(--white);border-radius:22px;padding:8px 13px;font-size:12px;white-space:nowrap}
+.nom-search-tab.active{background:var(--lime);border-color:var(--lime);color:#111;font-weight:700}
+.nom-search-group{margin:12px 0 17px}
+.nom-search-group h3{font-size:14px;color:var(--lime);margin:0 0 9px;display:flex;justify-content:space-between;align-items:center}
+.nom-search-group h3 span{font-size:11px;color:var(--muted);font-weight:400}
+.nom-search-result{display:flex;gap:11px;align-items:center;padding:11px 0;border-top:1px solid #303030;min-width:0}
+.nom-search-thumb{width:58px;height:58px;flex:0 0 58px;border-radius:11px;object-fit:cover;background:#282828}
+.nom-search-result-copy{min-width:0;flex:1}
+.nom-search-result-copy strong{display:block;color:var(--white);font-size:13px;overflow-wrap:anywhere}
+.nom-search-result-copy small{display:block;color:var(--muted);font-size:11px;line-height:1.45;margin-top:3px;overflow-wrap:anywhere}
+.nom-search-kind{color:var(--orange);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.nom-search-empty,.nom-search-hint{font-size:12px;color:var(--muted);padding:12px 2px}
+.nom-search-loading{color:var(--lime);font-size:12px;padding:14px 2px}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">N<span>O</span>M</div>
+  <button class="header-account" id="accountStatus" type="button" onclick="showPage('profile')"><img class="header-account-avatar hidden" id="headerAccountAvatar" alt=""><span class="header-account-fallback hidden" id="headerAvatarFallback" aria-hidden="true">N</span><span class="header-account-label" id="headerAccountLabel">Log in / Join</span></button>
+</header>
+
+<main>
+
+<section id="homePage">
+  <div class="hero">
+    <div class="eyebrow">WELCOME TO NOM</div>
+    <h1>Discover a life beyond the ordinary.</h1>
+    <p>Find places, meet people and create your own journey.</p>
+    <div class="tagline">YOUR DREAM. YOUR JOURNEY. YOUR LIFESTYLE.</div>
+    <br>
+    <button class="primary" onclick="showPage('explore')">Explore NOM</button>
+  </div>
+
+  <h2>Discover your next journey</h2>
+  <input class="search" id="homeSearch" placeholder="Search places, members, community, work..." oninput="searchNOM(this.value,'home')"><div class="nom-universal-search hidden" id="homeUniversalSearch"><div class="nom-search-tabs" id="homeSearchTabs"></div><div id="homeSearchResults" aria-live="polite"><div class="nom-search-hint">Search across NOM.</div></div></div>
+  <div class="categories">
+    <button class="category active" onclick="filterPlaces('All',this)">All</button>
+    <button class="category" onclick="filterPlaces('Nature',this)">Nature</button>
+    <button class="category" onclick="filterPlaces('Food',this)">Food</button>
+    <button class="category" onclick="filterPlaces('Beach',this)">Beach</button>
+    <button class="category" onclick="filterPlaces('Culture',this)">Culture</button>
+  </div>
+  <div class="cards" id="homePlaces"></div>
+
+  <h2>Live the NOM lifestyle</h2>
+  <div class="feed-card">
+    <div class="eyebrow">COMMUNITY</div>
+    <h3>More than a destination.</h3>
+    <p>Connect with travellers, share experiences and discover opportunities around the world.</p>
+    <button class="secondary" onclick="showPage('community')">Discover Community</button>
+  </div>
+</section>
+
+<section id="explorePage" class="hidden">
+  <div class="eyebrow">EXPLORE</div>
+  <h1>Find your next destination.</h1>
+  <input class="search" id="exploreSearch" placeholder="Search places, members, community, work..." oninput="searchNOM(this.value,'explore')"><div class="nom-universal-search hidden" id="exploreUniversalSearch"><div class="nom-search-tabs" id="exploreSearchTabs"></div><div id="exploreSearchResults" aria-live="polite"><div class="nom-search-hint">Search across NOM.</div></div></div>
+  <div class="categories">
+    <button class="category active" onclick="filterPlaces('All',this)">All</button>
+    <button class="category" onclick="filterPlaces('Nature',this)">Nature</button>
+    <button class="category" onclick="filterPlaces('Food',this)">Food</button>
+    <button class="category" onclick="filterPlaces('Beach',this)">Beach</button>
+    <button class="category" onclick="filterPlaces('Culture',this)">Culture</button>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0">
+    <button class="secondary" id="importBaliButton" type="button" onclick="importBaliPlaces()">Save up to 100 Bali places to NOM</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:9px;margin:8px 0 12px">
+    <button class="category active" id="photosOnlyButton" type="button" aria-pressed="true" onclick="togglePhotosOnly()">📷 Photos only: ON</button>
+  </div>
+  <div class="message" id="placesMessage"></div>
+  <div class="cards" id="explorePlaces"></div>
+  <p class="small" style="margin-top:14px">Place data: © OpenStreetMap contributors · Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener" style="color:var(--orange)">Geoapify</a>.</p>
+</section>
+
+<section id="communityPage" class="hidden">
+  <div class="eyebrow">NOM COMMUNITY</div><h1>Stories without borders.</h1>
+  <p>Discover places shared by NOM members. Your discoveries can inspire someone's next journey.</p>
+  <div class="feed-card"><div class="eyebrow">SHARE WITH NOM</div><h3>Found somewhere special?</h3>
+    <p>Upload a place and your own photographs. Help the NOM community discover it.</p>
+    <button class="primary" type="button" onclick="showCommunityComposer()">＋ Share a place</button></div>
+  <div class="form-card community-upload hidden" id="communityComposer">
+    <h2>Share a place</h2><p class="small">Upload up to 4 photos and/or videos (JPG, PNG, WebP, MP4, MOV or WebM · max 50 MB per file).</p>
+    <label for="communityTitle">Place name</label><input id="communityTitle" maxlength="100" placeholder="e.g. A hidden beach in Bali">
+    <label for="communityLocation">Location</label><input id="communityLocation" maxlength="160" placeholder="Town, island or country">
+    <label for="communityCategory">Category</label><select id="communityCategory"><option>Nature</option><option>Food</option><option>Beach</option><option>Culture</option><option>Stay</option><option>Experience</option></select>
+    <label for="communityDescription">Your story / description</label><textarea id="communityDescription" rows="4" maxlength="1200" placeholder="What makes this place worth discovering?"></textarea>
+    <label for="communityMedia">Photos and videos</label><input id="communityMedia" type="file" accept="image/*,video/*" multiple>
+    <button class="primary" id="communitySubmit" type="button" onclick="submitCommunityPlace()">Submit place</button>
+    <button class="secondary" type="button" onclick="hideCommunityComposer()">Cancel</button>
+    <div class="message" id="communityMessage"></div><div class="work-progress hidden" id="communityUploadProgress"><span id="communityUploadProgressBar"></span></div><p class="small">Your place and photos appear publicly in Explore and Community as soon as you share them.</p>
+  </div>
+  <h2>Discoveries from the community</h2><div id="communityFeed"><p class="small">Loading community discoveries...</p></div>
+  <h2>Your submissions</h2><div id="myCommunitySubmissions"><p class="small">Log in to see your submissions.</p></div>
+  <div class="feed-card nom-work-entry" role="link" tabindex="0" aria-label="Open NOM Work" onclick="showPage('work')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showPage('work')}"><div class="eyebrow">NOM WORK</div><h3>Work. Travel. Live.</h3>
+    <p>Discover opportunities, offer your skills and connect with people around the world.</p><span class="small">Explore NOM Work →</span></div>
+</section>
+
+
+<section id="workPage" class="hidden">
+<div class="eyebrow">NOM WORK · CREATIVE PORTFOLIOS</div><div class="work-intro"><div class="tagline">YOUR SKILLS. YOUR STORY. YOUR NEXT OPPORTUNITY.</div><h1>Make your work travel.</h1><p>Showcase your work through a professional profile, photo galleries, video reels and audio samples.</p></div>
+<h2>Portfolio inspiration</h2><p class="small">Fictional demo members. These examples are not real people or available for hire.</p>
+<article class="work-demo"><div class="work-cover"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1000&q=85" alt="Fashion editorial sample"><img class="work-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=85" alt="Demo model portrait"></div><div class="work-demo-body"><div class="work-role">MODEL · CREATOR · BALI / WORLDWIDE</div><h2>Maya Santoro</h2><p class="small">@mayasantoro · Fictional NOM demo profile</p><p>Editorial and lifestyle model available for fashion campaigns, resort shoots, beauty stories and creative collaborations across Southeast Asia.</p><div class="work-tags"><span class="work-tag">Editorial</span><span class="work-tag">Lifestyle</span><span class="work-tag">Swimwear</span><span class="work-tag">Beauty</span><span class="work-tag">Campaigns</span></div><div class="work-gallery"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" alt="Portrait"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80" alt="Lifestyle"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=600&q=80" alt="Editorial"><img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=600&q=80" alt="Fashion"></div><p class="small">DEMO GALLERY · SAMPLE PHOTOGRAPHY</p></div></article>
+<article class="work-demo"><div class="work-cover"><img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1000&q=85" alt="Landscape photography"><img class="work-avatar" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=85" alt="Demo photographer portrait"></div><div class="work-demo-body"><div class="work-role">PHOTOGRAPHER · VISUAL STORYTELLER · UBUD, BALI</div><h2>Arlo Bennett</h2><p class="small">@arlobennett.photo · Fictional NOM demo profile</p><p>Travel and commercial photographer capturing places, people and independent brands through natural light and honest stories.</p><div class="work-tags"><span class="work-tag">Travel</span><span class="work-tag">Portraits</span><span class="work-tag">Hospitality</span><span class="work-tag">Brand campaigns</span><span class="work-tag">Drone</span></div><div class="work-gallery"><img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=600&q=80" alt="Landscape"><img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=80" alt="Travel"><img src="https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=600&q=80" alt="Coast"><img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80" alt="Portrait"></div><p class="small">DEMO GALLERY · SAMPLE PHOTOGRAPHY</p></div></article>
+<h2>Your NOM messages <span id="nomInboxBadge" class="nom-unread-badge hidden">0</span></h2><p class="small">Private conversations with other NOM members.</p><div id="nomInbox"><p class="small">Log in to see your messages.</p></div><h2>Meet NOM members</h2><p class="small">Discover members by their professional identity and open their portfolios. Available to registered NOM members.</p><div id="workDirectory"><p class="small">Log in to discover NOM members.</p></div><div class="work-portfolio-view hidden" id="workPublicPortfolio"><button class="text-button" type="button" onclick="closeMemberPortfolio()">← Back to members</button><div id="workPublicPortfolioContent"></div></div>
+<div class="form-card" id="workMemberGate"><h2>Build your NOM portfolio</h2><p>Registered NOM members can create a profile and upload their own photos, videos and audio samples.</p><button class="primary" onclick="showPage('profile');showAuth('signup')">Create NOM account</button><button class="secondary" onclick="showPage('profile');showAuth('login')">Log in</button></div>
+<div id="workMemberTools" class="hidden"><div class="form-card"><h2>My professional profile</h2><p class="small">Your public identity appears as your username followed by your profession.</p><div class="work-member-identity" id="workIdentityPreview">@username · Your profession</div><label>Profession / professional title</label><input class="work-field" id="workHeadline" maxlength="140" placeholder="Photographer · Model · Designer"><label>Based in</label><input class="work-field" id="workLocation" maxlength="120" placeholder="City, country or worldwide"><label>About your work</label><textarea class="work-field" id="workBio" rows="4" maxlength="2000" placeholder="Tell clients and collaborators what you do"></textarea><button class="primary" id="workProfileSave" onclick="saveWorkPortfolioProfile()">Save profile</button><div class="message" id="workProfileMessage"></div></div>
+<div class="form-card"><h2>＋ Add to my portfolio</h2><p class="small">Photos, videos and audio · up to 50 MB per file. MP4, MOV and WebM videos are supported.</p><input class="work-field" id="workMediaFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav,audio/ogg,audio/webm"><textarea class="work-field" id="workMediaCaption" rows="2" maxlength="1000" placeholder="Caption for selected media"></textarea><button class="primary" id="workMediaUpload" onclick="uploadWorkPortfolioMedia()">Upload to portfolio</button><div class="message" id="workMediaMessage"></div><div class="work-progress hidden" id="workUploadProgress"><span id="workUploadProgressBar"></span></div></div><h2>My media portfolio</h2><div id="workPortfolioMedia"><p class="small">Your portfolio is ready for media.</p></div></div></section><section id="savedPage" class="hidden">
+  <div class="eyebrow">YOUR COLLECTION</div>
+  <h1>Saved places.</h1>
+  <p>Your favourite discoveries in one place.</p>
+  <div class="cards" id="savedPlaces"></div>
+</section>
+
+<section id="tripPage" class="hidden">
+  <div class="eyebrow">YOUR JOURNEY</div>
+  <h1>My Trip Planner</h1>
+  <p>Start building your next adventure.</p>
+  <div class="form-card">
+    <label>Trip destination</label>
+    <input id="tripDestination" placeholder="Where do you want to go?">
+    <label>Travel dates</label>
+    <input id="tripDates" placeholder="e.g. 10–20 December">
+    <label>Notes</label>
+    <textarea id="tripNotes" rows="3" placeholder="Your plans and ideas..."></textarea>
+    <button class="primary" onclick="saveTrip()">Save trip</button>
+    <div class="message" id="tripMessage"></div>
+  </div>
+  <div id="tripList"></div>
+</section>
+
+<section id="profilePage" class="hidden">
+  <div class="eyebrow">YOUR NOM ACCOUNT</div>
+  <h1>My Profile</h1>
+  <div class="panel" id="profileInfo">
+    <p>You are browsing NOM as a guest.</p>
+    <button class="primary" onclick="showAuth('signup')">Create account</button>
+    <button class="secondary" onclick="showAuth('login')">Log in</button>
+  </div>
+
+  <div class="form-card hidden" id="authCard">
+    <h2 id="authTitle">Create your account</h2>
+    <p id="authDescription">Join the NOM community.</p>
+
+    <div id="signupFields">
+      <label>Profile picture (optional)</label>
+      <div class="avatar-upload">
+        <img id="avatarPreview" class="avatar-preview hidden" alt="Profile picture preview">
+        <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose profile picture" onchange="handleRegistrationAvatar(this)">
+        <p class="small">Choose a JPG, PNG or WebP image. NOM resizes it for your profile (max 2 MB after processing).</p>
+      </div>
+      <label>Display name</label>
+      <input id="displayName" autocomplete="name" placeholder="Your name">
+      <label>Username</label>
+      <input id="username" autocomplete="username" placeholder="Choose a username">
+    </div>
+
+    <label>Email address</label>
+    <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+
+    <label>Password</label>
+    <input id="password" type="password" autocomplete="current-password" placeholder="At least 6 characters">
+
+    <button class="primary" id="authSubmit" onclick="submitAuth()">Create account</button>
+    <button class="text-button" id="authSwitch" onclick="switchAuth()">Already have an account? Log in</button>
+    <div class="message" id="authMessage"></div>
+    <hr>
+    <button class="text-button" onclick="hideAuth()">Cancel</button>
+  </div>
+
+  <div class="panel hidden" id="loggedInPanel">
+    <img id="loggedInAvatar" class="account-avatar hidden" alt="Your NOM profile picture">
+    <h3 id="loggedInName">@username</h3>
+    <p class="small">Your NOM account</p>
+    <div class="avatar-upload">
+      <label for="existingAvatarFile">Change profile picture</label>
+      <input id="existingAvatarFile" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose a new profile picture" onchange="previewExistingAvatar(this)">
+      <img id="existingAvatarPreview" class="avatar-preview hidden" alt="New profile picture preview">
+      <button class="primary hidden" id="saveExistingAvatar" type="button" onclick="saveExistingAvatar()">Save profile picture</button>
+      <div class="message" id="existingAvatarMessage"></div>
+      <p class="small">JPG, PNG or WebP. Maximum 8 MB before resizing; stored image maximum 2 MB.</p>
+    </div>
+    <button class="secondary" onclick="logout()">Log out</button>
+    <div class="message" id="logoutMessage"></div>
+  </div>
+</section>
+
+</main><div id="placeDetailOverlay" class="detail-overlay" role="dialog" aria-modal="true" aria-hidden="true" onclick="if(event.target===this)closePlaceDetail()"><div class="detail-topbar"><button class="detail-back" type="button" onclick="closePlaceDetail()" aria-label="Back to places">← <span>Back</span></button><span class="eyebrow">NOM DISCOVERY</span><button class="detail-close" type="button" onclick="closePlaceDetail()" aria-label="Close">×</button></div><div class="detail-body" id="placeDetailBody"></div></div><div id="workMediaLightbox" class="work-lightbox hidden" role="dialog" aria-modal="true" aria-label="Full-size portfolio media" onclick="if(event.target===this)closeWorkMediaViewer()"><button class="work-lightbox-close" type="button" onclick="closeWorkMediaViewer()" aria-label="Close">×</button><div id="workMediaLightboxContent"></div></div><section id="nomChatOverlay" class="nom-chat-overlay hidden" role="dialog" aria-modal="true" aria-label="NOM private chat"><div class="nom-chat-top"><div class="nom-chat-identity"><span id="nomChatAvatar"></span><div><strong id="nomChatTitle">NOM messages</strong><div class="small" id="nomChatSubtitle">Private member conversation</div></div></div><button class="text-button" type="button" onclick="closeNomChat()">Close</button></div><div class="nom-chat-messages" id="nomChatMessages"></div><form class="nom-chat-compose" onsubmit="event.preventDefault();sendNomMessage()"><textarea id="nomChatInput" maxlength="4000" placeholder="Write a message..." required></textarea><button class="primary" id="nomChatSend" type="submit">Send</button></form></section>
+
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="home" onclick="showPage('home')"><span>⌂</span>Home</button>
+  <button class="nav-item" data-page="explore" onclick="showPage('explore')"><span>⌕</span>Explore</button>
+  <button class="nav-item" data-page="community" onclick="showPage('community')"><span>◎</span>Community <span id="nomCommunityBadge" class="nom-unread-badge hidden">0</span></button>
+  <button class="nav-item" data-page="saved" onclick="showPage('saved')"><span>♡</span>Saved</button>
+  <button class="nav-item" data-page="trip" onclick="showPage('trip')"><span>✈</span>My Trip</button>
+</nav>
+
+<script>
+/* NOM SUPABASE CONNECTION */
+const SUPABASE_URL = "https://ojzzroswtzjnnoigjpuc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_xc8mdZ1eb8XtEyxtn3tfXg_DnqNNfjI";
+
+const supabaseClient = window.supabase?.createClient
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  : null;
+
+let currentUser = null;
+let authMode = "signup";
+let selectedCategory = "All";
+let photosOnly = true;
+
+/* PLACES — loaded from the Supabase catalogue */
+let places = [];
+const nomDetailItems = Object.create(null);
+let currentResults = [];
+let searchRequestId = 0;
+
+let savedIds = JSON.parse(localStorage.getItem("nomSaved") || "[]");
+let trips = JSON.parse(localStorage.getItem("nomTrips") || "[]");
+
+/* NAVIGATION */
+function showPage(page){
+  document.querySelectorAll("main section").forEach(section=>{
+    section.classList.add("hidden");
+  });
+
+  const target = document.getElementById(page + "Page");
+  if(target) target.classList.remove("hidden");
+
+  document.querySelectorAll(".nav-item").forEach(button=>{
+    button.classList.toggle("active",button.dataset.page === page);
+  });
+
+  if(page === "saved") renderSaved();
+  if(page === "trip") renderTrips();
+  if(page === "profile") updateProfile();
+  if(page === "community") loadCommunityFeed();
+  if(page === "work") openWork();
+  window.scrollTo(0,0);
+}
+
+
+const WORK_MEDIA_BUCKET="work-portfolio-media",WORK_MEDIA_MAX=52428800;
+const WORK_MEDIA_TYPES=new Set(["image/jpeg","image/png","image/webp","image/gif","video/mp4","video/webm","video/quicktime","video/x-m4v","audio/mpeg","audio/mp4","audio/aac","audio/wav","audio/x-wav","audio/ogg","audio/webm"]);
+function openWork(){const gate=document.getElementById("workMemberGate"),tools=document.getElementById("workMemberTools");if(!currentUser){gate.classList.remove("hidden");tools.classList.add("hidden");document.getElementById("workDirectory").innerHTML='<p class="small">Join NOM or log in to discover member portfolios.</p>';return;}gate.classList.add("hidden");tools.classList.remove("hidden");loadWorkPortfolio();loadWorkDirectory();loadNomInbox();}
+async function loadWorkPortfolio(){if(!currentUser||!supabaseClient)return;const userId=currentUser.id;workHeadline.value="";workLocation.value="";workBio.value="";const {data:p}=await supabaseClient.from("work_profiles").select("headline,bio,location").eq("user_id",userId).maybeSingle();if(currentUser?.id!==userId)return;if(p){workHeadline.value=p.headline||"";workLocation.value=p.location||"";workBio.value=p.bio||"";}updateWorkIdentityPreview();const {data:a,error}=await supabaseClient.from("work_portfolio_media").select("id,media_type,title,caption,object_path,file_size_bytes").eq("user_id",userId).order("created_at",{ascending:false});if(currentUser?.id!==userId)return;const target=document.getElementById("workPortfolioMedia");if(error){target.textContent="Could not load your media.";return;}if(!a?.length){target.innerHTML='<p class="small">Add your first portfolio item above.</p>';return;}target.innerHTML=a.map(x=>{const u=supabaseClient.storage.from(WORK_MEDIA_BUCKET).getPublicUrl(x.object_path).data.publicUrl;const m=x.media_type==="photo"?'<img class="work-expandable" src="'+escapeHTML(u)+'" alt="Portfolio photo" onclick="openWorkMediaViewer(\'photo\',this.src)">':x.media_type==="video"?'<video class="work-expandable" controls playsinline src="'+escapeHTML(u)+'" onclick="openWorkMediaViewer(\'video\',this.currentSrc||this.src)"></video>':'<audio controls src="'+escapeHTML(u)+'"></audio>';return '<article class="work-media-card">'+m+(x.caption?'<p>'+escapeHTML(x.caption)+'</p>':'')+'<button class="text-button" data-id="'+escapeHTML(x.id)+'" data-path="'+escapeHTML(x.object_path)+'" onclick="deleteWorkPortfolioMedia(this.dataset.id,this.dataset.path)">Remove</button></article>';}).join("");}
+function updateWorkIdentityPreview(){
+  const preview=document.getElementById("workIdentityPreview");
+  if(!preview)return;
+  const username=currentUser?.user_metadata?.username||"NOM member";
+  const profession=document.getElementById("workHeadline")?.value.trim()||"Add your profession";
+  preview.textContent="@"+username+" · "+profession;
+}
+function nomAvatarMarkup(url,label,compact=false){
+ const safeUrl=typeof url==="string"&&/^https:\/\//i.test(url)?url:"";
+ return safeUrl?'<img class="nom-member-avatar'+(compact?" compact":"")+'" src="'+escapeHTML(safeUrl)+'" alt="" loading="lazy">':'<span class="nom-member-avatar'+(compact?" compact":"")+'" aria-hidden="true"></span>';
+}
+async function getNomAvatarMap(userIds){
+ const ids=[...new Set((userIds||[]).filter(Boolean))];if(!ids.length)return {};
+ const {data,error}=await supabaseClient.from("profiles").select("id,avatar_url").in("id",ids);
+ if(error){console.warn("NOM profile avatars:",error.message);return {};}
+ return Object.fromEntries((data||[]).map(p=>[p.id,p.avatar_url||""]));
+}
+async function loadWorkDirectory(){
+ const target=document.getElementById("workDirectory");if(!target)return;
+ if(!currentUser){target.innerHTML='<p class="small">Log in to discover NOM members.</p>';return;}
+ const userId=currentUser.id;
+ target.innerHTML='<p class="small">Loading NOM members...</p>';
+ const {data,error}=await supabaseClient.from("work_profiles").select("user_id,headline,bio,location,display_name,username,updated_at").order("updated_at",{ascending:false}).limit(60);
+ if(currentUser?.id!==userId)return;
+ if(error){target.innerHTML='<p class="small">Member directory is temporarily unavailable.</p>';console.warn("NOM Work directory:",error.message);return;}
+ if(!data?.length){target.innerHTML='<p class="small">No public portfolios yet. Save your professional profile to appear here.</p>';return;}
+ const avatarMap=await getNomAvatarMap(data.map(p=>p.user_id));
+ target.innerHTML=data.map(p=>{
+  const username=p.username||"nom-member",isSelf=p.user_id===currentUser.id;
+  const msg=isSelf?"":'<button class="primary" type="button" onclick="startNomChat(\''+escapeHTML(p.user_id)+'\')">Message</button>';
+  return '<article class="work-member-card"><div class="work-member-identity"><span class="nom-identity-row">'+nomAvatarMarkup(avatarMap[p.user_id],username)+'<span>@'+escapeHTML(username)+'</span></span></div><div class="small work-role">'+escapeHTML(p.headline||"NOM member")+'</div><h3>'+escapeHTML(p.display_name||username)+'</h3><p>'+escapeHTML(p.bio||"NOM member portfolio")+'</p><p class="small">'+escapeHTML(p.location||"Location not added")+'</p><div class="work-card-actions"><button class="secondary" type="button" onclick="openMemberPortfolio(\''+escapeHTML(p.user_id)+'\')">View portfolio</button>'+msg+'</div></article>';
+ }).join("");
+}
+async function openMemberPortfolio(userId){
+  if(!currentUser||!userId)return;
+  const panel=document.getElementById("workPublicPortfolio"),target=document.getElementById("workPublicPortfolioContent");
+  panel.classList.remove("hidden");target.innerHTML='<p class="small">Opening portfolio...</p>';panel.scrollIntoView({behavior:"smooth",block:"start"});
+  const {data:p,error}=await supabaseClient.from("work_profiles").select("user_id,headline,bio,location,display_name,username").eq("user_id",userId).maybeSingle();
+  if(error||!p){target.innerHTML='<p class="small">This portfolio is unavailable.</p>';return;}
+  const {data:avatarData}=await supabaseClient.from("profiles").select("avatar_url").eq("id",userId).maybeSingle();
+  const {data:media,error:mediaError}=await supabaseClient.from("work_portfolio_media").select("id,media_type,caption,object_path,created_at,sort_order").eq("user_id",userId).order("sort_order",{ascending:true}).order("created_at",{ascending:false});
+  if(mediaError){target.innerHTML='<p class="small">Could not load this member’s media.</p>';return;}
+  const items=(media||[]).map(x=>{
+    const url=supabaseClient.storage.from(WORK_MEDIA_BUCKET).getPublicUrl(x.object_path).data.publicUrl;
+    const player=x.media_type==="photo"?'<img class="work-expandable" src="'+escapeHTML(url)+'" alt="Portfolio photo" loading="lazy" onclick="openWorkMediaViewer(\'photo\',this.src)">':x.media_type==="video"?'<video class="work-expandable" controls playsinline preload="metadata" src="'+escapeHTML(url)+'" onclick="openWorkMediaViewer(\'video\',this.currentSrc||this.src)"></video>':'<audio controls preload="metadata" src="'+escapeHTML(url)+'"></audio>';
+    return '<article class="work-media-card">'+player+(x.caption?'<p>'+escapeHTML(x.caption)+'</p>':'')+'</article>';
+  }).join("");
+  const username=p.username||"nom-member";
+  target.innerHTML='<div class="work-member-identity"><span class="nom-identity-row">'+nomAvatarMarkup(avatarData?.avatar_url,username)+'<span>@'+escapeHTML(username)+'</span></span></div><div class="small work-role">'+escapeHTML(p.headline||"NOM member")+'</div><h2>'+escapeHTML(p.display_name||username)+'</h2><p class="small">'+escapeHTML(p.location||"")+'</p><p>'+escapeHTML(p.bio||"")+'</p><h3>Portfolio</h3>'+(items||'<p class="small">This member has not uploaded portfolio media yet.</p>');
+}
+
+let activeNomConversation=null,nomChatChannel=null,nomNotificationChannel=null;
+function openWorkMediaViewer(kind,url){
+ const box=document.getElementById("workMediaLightbox"),target=document.getElementById("workMediaLightboxContent");if(!box||!url)return;
+ target.innerHTML=kind==="video"?'<video controls playsinline autoplay src="'+escapeHTML(url)+'"></video>':'<img src="'+escapeHTML(url)+'" alt="Full-size portfolio media">';
+ box.classList.remove("hidden");document.body.style.overflow="hidden";
+}
+function closeWorkMediaViewer(){
+ const box=document.getElementById("workMediaLightbox");if(!box)return;box.classList.add("hidden");document.getElementById("workMediaLightboxContent").innerHTML="";
+ if(document.getElementById("nomChatOverlay").classList.contains("hidden"))document.body.style.overflow="";
+}
+async function startNomChat(otherId){
+ if(!currentUser){showPage("profile");showAuth("login");return;}if(!otherId||otherId===currentUser.id)return;
+ const pair=[currentUser.id,otherId].sort();
+ let result=await supabaseClient.from("nom_conversations").select("id,member_one,member_two").eq("member_one",pair[0]).eq("member_two",pair[1]).maybeSingle();
+ if(result.error){alert("Could not open NOM chat: "+result.error.message);return;}
+ let conversation=result.data;
+ if(!conversation){
+  result=await supabaseClient.from("nom_conversations").insert({member_one:pair[0],member_two:pair[1]}).select("id,member_one,member_two").single();
+  conversation=result.data;
+  if(!conversation){const retry=await supabaseClient.from("nom_conversations").select("id,member_one,member_two").eq("member_one",pair[0]).eq("member_two",pair[1]).maybeSingle();conversation=retry.data;}
+ }
+ if(!conversation){alert("Could not start this conversation. Please try again.");return;}
+ await openNomConversation(conversation.id,otherId);
+}
+async function openNomConversation(conversationId,otherId){
+ activeNomConversation=conversationId;
+ const [{data:p},{data:avatarProfile}]=await Promise.all([supabaseClient.from("work_profiles").select("username,display_name").eq("user_id",otherId).maybeSingle(),supabaseClient.from("profiles").select("avatar_url").eq("id",otherId).maybeSingle()]);
+ document.getElementById("nomChatAvatar").innerHTML=nomAvatarMarkup(avatarProfile?.avatar_url,p?.username||"NOM member");
+ document.getElementById("nomChatTitle").textContent="@"+(p?.username||"NOM member");
+ document.getElementById("nomChatSubtitle").textContent="Private NOM conversation";
+ document.getElementById("nomChatOverlay").classList.remove("hidden");document.body.style.overflow="hidden";
+ await markNomConversationRead(conversationId);
+ await loadNomMessages();
+ await loadNomInbox();
+ if(nomChatChannel)await supabaseClient.removeChannel(nomChatChannel);
+ nomChatChannel=supabaseClient.channel("nom-chat-"+conversationId).on("postgres_changes",{event:"INSERT",schema:"public",table:"nom_messages",filter:"conversation_id=eq."+conversationId},()=>loadNomMessages()).subscribe();
+ document.getElementById("nomChatInput").focus();
+}
+async function loadNomMessages(){
+ if(!activeNomConversation)return;const target=document.getElementById("nomChatMessages");
+ const {data,error}=await supabaseClient.from("nom_messages").select("id,sender_id,body,created_at").eq("conversation_id",activeNomConversation).order("created_at",{ascending:true}).limit(300);
+ if(error){target.innerHTML='<p class="small">Messages could not be loaded.</p>';return;}
+ target.innerHTML=(data||[]).map(m=>'<div class="nom-chat-bubble '+(m.sender_id===currentUser.id?'mine':'')+'">'+escapeHTML(m.body).replace(/\n/g,"<br>")+'<small>'+new Date(m.created_at).toLocaleString()+'</small></div>').join("")||'<p class="small">This is the beginning of your NOM conversation.</p>';
+ target.scrollTop=target.scrollHeight;
+}
+async function sendNomMessage(){
+ const input=document.getElementById("nomChatInput"),button=document.getElementById("nomChatSend"),body=input.value.trim();
+ if(!body||!activeNomConversation||!currentUser)return;button.disabled=true;
+ const {error}=await supabaseClient.from("nom_messages").insert({conversation_id:activeNomConversation,sender_id:currentUser.id,body});button.disabled=false;
+ if(error){alert("Message was not sent: "+error.message);return;}
+ input.value="";await loadNomMessages();await loadNomInbox();
+}
+async function markNomConversationRead(conversationId){
+ if(!currentUser||!conversationId)return;
+ const {error}=await supabaseClient.from("nom_messages").update({read_at:new Date().toISOString()}).eq("conversation_id",conversationId).neq("sender_id",currentUser.id).is("read_at",null);
+ if(error)console.warn("NOM read receipt:",error.message);
+}
+function renderNomUnreadBadges(count){
+ const value=Math.max(0,Number(count)||0);
+ ["nomInboxBadge","nomCommunityBadge"].forEach(id=>{
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent=value>99?"99+":String(value);el.classList.toggle("hidden",value===0);
+  el.setAttribute("aria-label",value+" unread messages");
+ });
+}
+async function refreshNomUnreadCount(){
+ if(!currentUser){renderNomUnreadBadges(0);return 0;}
+ const {data:conversations,error}=await supabaseClient.from("nom_conversations").select("id").or("member_one.eq."+currentUser.id+",member_two.eq."+currentUser.id).limit(100);
+ if(error){console.warn("NOM unread count:",error.message);return 0;}
+ const ids=(conversations||[]).map(c=>c.id);if(!ids.length){renderNomUnreadBadges(0);return 0;}
+ const {data:unread,error:unreadError}=await supabaseClient.from("nom_messages").select("id").in("conversation_id",ids).neq("sender_id",currentUser.id).is("read_at",null).limit(500);
+ if(unreadError){console.warn("NOM unread messages:",unreadError.message);return 0;}
+ const count=(unread||[]).length;renderNomUnreadBadges(count);return count;
+}
+function startNomNotificationListener(){
+ if(!currentUser||!supabaseClient)return;
+ if(nomNotificationChannel)supabaseClient.removeChannel(nomNotificationChannel);
+ nomNotificationChannel=supabaseClient.channel("nom-inbox-notifications-"+currentUser.id)
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"nom_messages"},payload=>{
+   const message=payload.new;
+   if(!currentUser||message.sender_id===currentUser.id)return;
+   if(activeNomConversation===message.conversation_id){
+    loadNomMessages();markNomConversationRead(message.conversation_id).then(()=>{refreshNomUnreadCount();loadNomInbox();});
+   }else{refreshNomUnreadCount();loadNomInbox();}
+  }).subscribe();
+ refreshNomUnreadCount();
+}
+async function loadNomInbox(){
+ const target=document.getElementById("nomInbox");if(!target)return;
+ if(!currentUser){target.innerHTML='<p class="small">Log in to see your messages.</p>';renderNomUnreadBadges(0);return;}
+ const {data,error}=await supabaseClient.from("nom_conversations").select("id,member_one,member_two,created_at").or("member_one.eq."+currentUser.id+",member_two.eq."+currentUser.id).order("created_at",{ascending:false}).limit(40);
+ if(error){target.innerHTML='<p class="small">Your NOM messages are temporarily unavailable.</p>';return;}
+ if(!data?.length){target.innerHTML='<p class="small">No conversations yet. Choose Message on a member card to start one.</p>';await refreshNomUnreadCount();return;}
+ const rows=await Promise.all(data.map(async convo=>{
+  const peer=convo.member_one===currentUser.id?convo.member_two:convo.member_one;
+  const [profile,avatarProfile,last,unread]=await Promise.all([
+   supabaseClient.from("work_profiles").select("username").eq("user_id",peer).maybeSingle(),
+   supabaseClient.from("profiles").select("avatar_url").eq("id",peer).maybeSingle(),
+   supabaseClient.from("nom_messages").select("body,created_at").eq("conversation_id",convo.id).order("created_at",{ascending:false}).limit(1).maybeSingle(),
+   supabaseClient.from("nom_messages").select("id").eq("conversation_id",convo.id).neq("sender_id",currentUser.id).is("read_at",null).limit(100)
+  ]);
+  const p=profile.data||{},count=unread.data?.length||0,avatarUrl=avatarProfile.data?.avatar_url;
+  const html='<div class="nom-inbox-item '+(count?'has-unread':'')+'"><strong><span class="nom-identity-row">'+nomAvatarMarkup(avatarUrl,p.username||"NOM member",true)+'<span>@'+escapeHTML(p.username||"NOM member")+'</span></span></strong>'+(count?'<span class="nom-unread-label">'+count+' new</span>':'')+'<p class="small">'+escapeHTML(last.data?.body||"Conversation started")+'</p><button class="secondary" type="button" onclick="openNomConversation(\''+convo.id+'\',\''+peer+'\')">Open chat</button></div>';
+  return {created_at:last.data?.created_at||convo.created_at,html};
+ }));
+ rows.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+ target.innerHTML=rows.map(x=>x.html).join("");
+ await refreshNomUnreadCount();
+}
+async function closeNomChat(){
+ document.getElementById("nomChatOverlay").classList.add("hidden");activeNomConversation=null;
+ if(nomChatChannel){await supabaseClient.removeChannel(nomChatChannel);nomChatChannel=null;}
+ if(document.getElementById("workMediaLightbox").classList.contains("hidden"))document.body.style.overflow="";
+ await loadNomInbox();
+}
+function closeMemberPortfolio(){document.getElementById("workPublicPortfolio").classList.add("hidden");document.getElementById("workPublicPortfolioContent").innerHTML="";}
+async function saveWorkPortfolioProfile(){const msg=document.getElementById("workProfileMessage");try{const {data:p}=await supabaseClient.from("profiles").select("username,display_name").eq("id",currentUser.id).maybeSingle();const {error}=await supabaseClient.from("work_profiles").upsert({user_id:currentUser.id,headline:document.getElementById("workHeadline").value.trim(),location:document.getElementById("workLocation").value.trim(),bio:document.getElementById("workBio").value.trim(),username:p?.username||"",display_name:p?.display_name||""},{onConflict:"user_id"});if(error)throw error;msg.textContent="Portfolio profile saved.";updateWorkIdentityPreview();await loadWorkDirectory();}catch(e){msg.textContent=e.message||"Could not save profile.";}}
+function uploadNomResumable(file,path,session,bucket,onProgress,contentType=file.type){return new Promise((resolve,reject)=>{if(!window.tus?.Upload){reject(new Error("Resumable upload library did not load. Refresh and try again."));return;}const storageHost=SUPABASE_URL.replace(".supabase.co",".storage.supabase.co");const upload=new window.tus.Upload(file,{endpoint:storageHost+"/storage/v1/upload/resumable",retryDelays:[0,3000,5000,10000,20000],headers:{authorization:"Bearer "+session.access_token,apikey:SUPABASE_KEY},uploadDataDuringCreation:true,removeFingerprintOnSuccess:true,chunkSize:6*1024*1024,metadata:{bucketName:bucket,objectName:path,contentType:contentType||"application/octet-stream",cacheControl:"3600"},onError:reject,onProgress:(sent,total)=>{if(onProgress)onProgress(total?Math.round(sent/total*100):0);},onSuccess:()=>resolve()});upload.findPreviousUploads().then(old=>{if(old.length)upload.resumeFromPreviousUpload(old[0]);upload.start();}).catch(reject);});}
+function uploadWorkResumable(file,path,session,onProgress){return uploadNomResumable(file,path,session,WORK_MEDIA_BUCKET,onProgress);}
+async function uploadWorkPortfolioMedia(){const input=document.getElementById("workMediaFiles"),files=Array.from(input.files||[]),msg=document.getElementById("workMediaMessage"),btn=document.getElementById("workMediaUpload"),progress=document.getElementById("workUploadProgress"),bar=document.getElementById("workUploadProgressBar");if(!files.length){msg.textContent="Choose photo, video or audio files first.";return;}if(files.some(f=>!WORK_MEDIA_TYPES.has(f.type)||f.size===0||f.size>WORK_MEDIA_MAX)){msg.textContent="Unsupported file or over 50 MB. Please check your selection.";return;}const {data:{session}}=await supabaseClient.auth.getSession();if(!session){msg.textContent="Please log in again.";return;}btn.disabled=true;progress.classList.remove("hidden");bar.style.width="0%";try{for(let i=0;i<files.length;i++){const f=files[i],ext=(f.name.split(".").pop()||"file").toLowerCase().replace(/[^a-z0-9]/g,""),path=currentUser.id+"/"+crypto.randomUUID()+"."+ext,type=f.type.startsWith("image/")?"photo":f.type.startsWith("video/")?"video":"audio";msg.textContent="Uploading item "+(i+1)+" of "+files.length+"...";if(f.size>6*1024*1024){await uploadWorkResumable(f,path,session,pct=>{bar.style.width=pct+"%";msg.textContent="Uploading item "+(i+1)+" of "+files.length+" · "+pct+"%";});}else{const {error:u}=await supabaseClient.storage.from(WORK_MEDIA_BUCKET).upload(path,f,{upsert:false,contentType:f.type});if(u)throw u;bar.style.width="100%";}const {error:d}=await supabaseClient.from("work_portfolio_media").insert({user_id:currentUser.id,media_type:type,title:type==="photo"?"Portfolio photo":type==="video"?"Portfolio video":"Portfolio audio",caption:document.getElementById("workMediaCaption").value.trim(),object_path:path,mime_type:f.type,file_size_bytes:f.size});if(d){await supabaseClient.storage.from(WORK_MEDIA_BUCKET).remove([path]);throw d;}}input.value="";document.getElementById("workMediaCaption").value="";msg.textContent=files.length+" item(s) uploaded to your portfolio.";await loadWorkPortfolio();}catch(e){msg.textContent=e.message||"Upload failed. Try again.";}finally{btn.disabled=false;setTimeout(()=>{progress.classList.add("hidden");bar.style.width="0%";},1200);}}
+
+async function deleteWorkPortfolioMedia(id,path){if(!confirm("Remove this portfolio item?"))return;const {error}=await supabaseClient.from("work_portfolio_media").delete().eq("id",id).eq("user_id",currentUser.id);if(error){alert(error.message);return;}await supabaseClient.storage.from(WORK_MEDIA_BUCKET).remove([path]);await loadWorkPortfolio();}
+
+/* PLACE CARDS — live Supabase catalogue and keyword search */
+let detailHistoryOpen=false;
+function hidePlaceDetail(){
+ const overlay=document.getElementById('placeDetailOverlay');
+ overlay.classList.remove('open');
+ overlay.setAttribute('aria-hidden','true');
+ document.documentElement.style.overflow='';
+ document.body.style.overflow='';
+ detailHistoryOpen=false;
+}
+function openPlaceDetail(id){
+ const item=nomDetailItems[String(id)];if(!item)return;
+ const photos=(item.photos||[]).filter(Boolean),videos=(item.videos||[]).filter(Boolean);
+ const gallery=photos.length||videos.length?'<div class="detail-gallery">'+photos.map(url=>'<img src="'+escapeHTML(url)+'" alt="'+escapeHTML(item.name)+'" loading="lazy">').join('')+videos.map(url=>'<video controls playsinline preload="metadata" src="'+escapeHTML(url)+'"></video>').join('')+'</div>':'';
+ const rating=item.rating?'★ '+item.rating:'';
+ const save=item.kind==='place'?'<button class="primary" data-place-id="'+escapeHTML(String(item.id))+'" onclick="toggleSave(this.dataset.placeId);closePlaceDetail()">♡ Save this place</button>':'';
+ const credit=item.attribution?'<p class="detail-credit">Photo: '+escapeHTML(item.attribution)+' · '+escapeHTML(item.license||'Licence details unavailable')+'</p>':'';
+ document.getElementById('placeDetailBody').innerHTML=gallery+'<div class="detail-copy"><div class="eyebrow">'+escapeHTML((item.category||'DISCOVERY').toUpperCase())+(rating?' · '+escapeHTML(rating):'')+'</div><h1>'+escapeHTML(item.name)+'</h1><div class="detail-location">'+escapeHTML(item.location||'')+(item.price?' · '+escapeHTML(item.price):'')+'</div><p class="detail-description">'+escapeHTML(item.description||'')+'</p>'+(item.author?'<p class="small">Shared by '+escapeHTML(item.author)+'</p>':'')+save+credit+'</div>';
+ const overlay=document.getElementById('placeDetailOverlay');
+ if(!detailHistoryOpen){
+   history.pushState({...history.state,nomPlaceDetail:true},'',location.pathname+location.search+'#place-detail');
+   detailHistoryOpen=true;
+ }
+ overlay.classList.add('open');
+ overlay.setAttribute('aria-hidden','false');
+ document.documentElement.style.overflow='hidden';
+ document.body.style.overflow='hidden';
+ overlay.scrollTop=0;
+ requestAnimationFrame(()=>{overlay.scrollTop=0;});
+}
+function closePlaceDetail(){
+ if(detailHistoryOpen && history.state && history.state.nomPlaceDetail){
+   history.back();
+   return;
+ }
+ hidePlaceDetail();
+}
+window.addEventListener('popstate',()=>{
+ if(detailHistoryOpen || document.getElementById('placeDetailOverlay').classList.contains('open')) hidePlaceDetail();
+});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closePlaceDetail();});
+
+function placeCard(place){
+  const isSaved = savedIds.includes(place.id);
+  nomDetailItems[String(place.id)]={id:place.id,kind:'place',name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],author:place.community_author,attribution:place.image_attribution,license:place.image_license};
+  const image = place.image_url || place.image || "";
+  const rating = place.rating ? "★ " + place.rating : "";
+  const photoCredit = place.image_attribution
+    ? `<p class="small photo-credit">Photo: ${escapeHTML(place.image_attribution)} · ${escapeHTML(place.image_license || "Licence details unavailable")}${place.image_source_url ? ` · <a href="${escapeHTML(place.image_source_url)}" target="_blank" rel="noopener" style="color:var(--orange)">Source</a>` : ""}</p>`
+    : "";
+  const videoPreviews = (Array.isArray(place.video_urls)?place.video_urls:[])
+    .filter(url=>typeof url==="string" && (url.startsWith("https://") || url.startsWith("http://")))
+    .map(url=>`<video class="place-video-preview" controls playsinline preload="metadata" src="${escapeHTML(url)}" onclick="event.stopPropagation()"></video>`)
+    .join("");
+
+  return `
+    <article class="place" role="button" tabindex="0" data-detail-id="${escapeHTML(String(place.id))}" onclick="openPlaceDetail(this.dataset.detailId)" onkeydown="if(event.key==='Enter'){openPlaceDetail(this.dataset.detailId)}">
+      <div class="place-image">
+        ${image ? `<img src="${escapeHTML(image)}" alt="${escapeHTML(place.name)}" loading="lazy">` : `<div style="height:100%;display:grid;place-items:center;color:var(--lime);font-size:12px;letter-spacing:2px">NOM DISCOVERY</div>`}
+        ${rating ? `<span class="place-rating">${rating}</span>` : ""}
+      </div>
+      ${videoPreviews}
+      ${photoCredit}
+      <div class="place-content">
+        <div class="place-meta">${escapeHTML(String(place.category || "DISCOVERY").toUpperCase())}</div>
+        <h3>${escapeHTML(place.name)}</h3>
+        <p>${escapeHTML(place.description)}</p>
+        <p class="small">${escapeHTML(place.location)} · ${escapeHTML(place.price || "")}</p>
+        <button class="save-button" onclick='event.stopPropagation();toggleSave("${escapeHTML(String(place.id))}")'>
+          ${isSaved ? "♥ Saved" : "♡ Save place"}
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function hasPlaceImage(place){
+  const image = place.image_url || place.image || "";
+  return (typeof image === "string" && (image.trim().startsWith("https://") || image.trim().startsWith("http://"))) || (Array.isArray(place.video_urls) && place.video_urls.some(url=>typeof url==="string" && (url.startsWith("https://") || url.startsWith("http://"))));
+}
+
+function renderPlaces(list=currentResults){
+  const safeList=Array.isArray(list)?list.filter(Boolean):[];
+  const visibleList=photosOnly?safeList.filter(hasPlaceImage):safeList;
+  let html="";
+  try{
+    html=visibleList.map(placeCard).join("");
+  }catch(error){
+    console.error("NOM place card rendering failed:",error);
+    html='<p class="small">Some place details could not be displayed. Refresh NOM to try again.</p>';
+  }
+  const empty=html || (photosOnly
+    ? '<p class="small">No places with photos found for this search. Try another keyword or turn Photos only off.</p>'
+    : '<p class="small">No places found. Try another search or category.</p>');
+  const home=document.getElementById("homePlaces");
+  const explore=document.getElementById("explorePlaces");
+  if(home)home.innerHTML=empty;
+  if(explore)explore.innerHTML=empty;
+}
+
+function togglePhotosOnly(){
+  photosOnly = !photosOnly;
+  const button = document.getElementById("photosOnlyButton");
+  button.textContent = photosOnly ? "📷 Photos only: ON" : "📷 Photos only: OFF";
+  button.classList.toggle("active",photosOnly);
+  button.setAttribute("aria-pressed",String(photosOnly));
+  renderPlaces(currentResults);
+}
+
+async function filterPlaces(category,button){
+  selectedCategory = category;
+  document.querySelectorAll(".category").forEach(item=>item.classList.remove("active"));
+  document.querySelectorAll(".category").forEach(item=>{
+    if(item.textContent.trim() === category) item.classList.add("active");
+  });
+  const homeQuery = document.getElementById("homeSearch")?.value || "";
+  const exploreQuery = document.getElementById("exploreSearch")?.value || "";
+  await searchPlaces(homeQuery || exploreQuery);
+}
+
+async function fetchNomPlacesFallback(query,category){
+  const params=new URLSearchParams({
+    select:"*",
+    is_published:"eq.true",
+    order:"name.asc",
+    limit:"500"
+  });
+  if(category && category!=="All")params.set("category","eq."+category);
+  const response=await fetch(SUPABASE_URL+"/rest/v1/places?"+params.toString(),{
+    headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Accept:"application/json"}
+  });
+  if(!response.ok)throw new Error("NOM catalogue request failed ("+response.status+")");
+  const rows=await response.json();
+  const term=(query||"").trim().toLowerCase();
+  return (Array.isArray(rows)?rows:[]).filter(place=>!term||
+    [place.name,place.location,place.description].some(value=>String(value||"").toLowerCase().includes(term)));
+}
+
+async function loadNomPlaces(query,category){
+  if(supabaseClient){
+    try{
+      const {data,error}=await supabaseClient.rpc("search_places",{
+        search_text:query,
+        category_filter:category
+      });
+      if(!error && Array.isArray(data) && data.length)return data;
+      if(error)console.warn("NOM RPC search unavailable; using direct catalogue fallback:",error.message);
+    }catch(error){
+      console.warn("NOM RPC search failed; using direct catalogue fallback:",error.message);
+    }
+  }
+  return await fetchNomPlacesFallback(query,category);
+}
+
+let searchDebounce;
+async function searchPlaces(query){
+  clearTimeout(searchDebounce);
+  const requestId = ++searchRequestId;
+  const value = (query || "").trim();
+
+  searchDebounce = setTimeout(async ()=>{
+    // Render NOM's own catalogue first; third-party search must not block cards.
+    const categoryAtRequest=selectedCategory;
+    const [localResult, communityResult] = await Promise.all([
+      loadNomPlaces(value,categoryAtRequest)
+        .then(data=>({data,error:null}))
+        .catch(error=>({data:[],error})),
+      supabaseClient
+        ? supabaseClient.from("community_posts").select("id,title,description,location,category,photo_urls,video_urls,user_id,username,display_name").eq("status","published").limit(50)
+            .then(result=>result).catch(error=>({data:[],error}))
+        : Promise.resolve({data:[],error:new Error("Supabase client unavailable")})
+    ]);
+
+    if(requestId !== searchRequestId) return;
+    if(localResult.error) console.error("NOM catalogue search:",localResult.error.message);
+    if(communityResult.error) console.warn("NOM community search:",communityResult.error.message);
+
+    const localPlaces = Array.isArray(localResult.data) ? localResult.data : [];
+    const communityPlaces = (communityResult.data || [])
+      .filter(post=>(selectedCategory === "All" || post.category === selectedCategory) &&
+        (!value || [post.title,post.description,post.location].some(field=>String(field||"").toLowerCase().includes(value.toLowerCase()))))
+      .map(post=>({
+        id:"community-" + post.id,source_id:"community-" + post.id,name:post.title,
+        description:post.description,location:post.location,category:post.category,
+        image_url:(post.photo_urls || [])[0] || null,image:(post.photo_urls || [])[0] || null,video_urls:post.video_urls||[],community_author:post.username?"@"+post.username:(post.display_name||"NOM member"),
+        rating:null,price:null
+      }));
+
+    function mergePlaceRecords(records){
+      const merged = new Map();
+      records.forEach(place=>{
+        const key = String(place.source_id || place.id);
+        const previous = merged.get(key) || {};
+        merged.set(key,{
+          ...previous,
+          ...place,
+          image_url:place.image_url || previous.image_url || null,
+          image_attribution:place.image_attribution || previous.image_attribution || null,
+          image_license:place.image_license || previous.image_license || null,
+          image_source_url:place.image_source_url || previous.image_source_url || null
+        });
+      });
+      return [...merged.values()];
+    }
+
+    currentResults = mergePlaceRecords([...communityPlaces,...localPlaces]);
+    places = mergePlaceRecords([...places,...currentResults]);
+    renderPlaces(currentResults);
+    renderSaved();
+
+    const message = document.getElementById("placesMessage");
+    if(message) message.textContent = localPlaces.length
+      ? "Showing places saved in the NOM catalogue."
+      : "Loading live discoveries...";
+
+    try{
+      const url = SUPABASE_URL + "/functions/v1/nom-place-search?q=" + encodeURIComponent(value) + "&category=" + encodeURIComponent(selectedCategory) + "&limit=30";
+      const response = await fetch(url,{headers:{apikey:SUPABASE_KEY}});
+      if(!response.ok) throw new Error("External place search unavailable");
+      const payload = await response.json();
+      if(requestId !== searchRequestId) return;
+      const externalPlaces = (payload.places || []).map(place=>({...place,id:place.source_id || place.id,rating:null,price:null}));
+      currentResults = mergePlaceRecords([...externalPlaces,...communityPlaces,...localPlaces]);
+      places = mergePlaceRecords([...places,...currentResults]);
+      renderPlaces(currentResults);
+      renderSaved();
+      if(message) message.textContent = externalPlaces.length
+        ? "Live discoveries from Geoapify and OpenStreetMap, alongside the NOM catalogue."
+        : localPlaces.length
+          ? "Showing places saved in the NOM catalogue."
+          : "No matches yet. Try another keyword or category.";
+    }catch(error){
+      console.warn("NOM external place search:",error.message);
+      if(requestId === searchRequestId && message && !localPlaces.length){
+        message.textContent = "Live place search is temporarily unavailable. Please try again.";
+      }
+    }
+  },350);
+}
+
+
+/* NOM UNIVERSAL SEARCH — Places, Members, Community and Work */
+let nomSearchTimer=null,nomSearchRequestId=0,nomSearchCategory="all",nomSearchSource="home";
+let nomSearchData={places:[],members:[],community:[],work:[]};
+function setNomSearchCategory(category){nomSearchCategory=category;renderNOMSearchResults();}
+function nomSearchSafeTerm(value){return String(value||"").trim().replace(/[%,()\\\\'"]/g," ").replace(/\\s+/g," ").slice(0,80);}
+function nomSearchTabsMarkup(){
+ const counts={all:nomSearchData.places.length+nomSearchData.members.length+nomSearchData.community.length+nomSearchData.work.length,places:nomSearchData.places.length,members:nomSearchData.members.length,community:nomSearchData.community.length,work:nomSearchData.work.length};
+ return [["all","All"],["places","Places"],["members","Members"],["community","Community"],["work","Work"]].map(([key,label])=>'<button type="button" class="nom-search-tab '+(nomSearchCategory===key?"active":"")+'" onclick="setNomSearchCategory(\''+key+'\')">'+label+' · '+counts[key]+'</button>').join("");
+}
+function nomSearchResultRow(kind,title,subtitle,image,action){
+ const safeImage=typeof image==="string"&&image.startsWith("https://")?image:"";
+ return '<div class="nom-search-result" '+(action?'onclick="'+action+'" role="button" tabindex="0"':'')+'>'+(safeImage?'<img class="nom-search-thumb" src="'+escapeHTML(safeImage)+'" alt="" loading="lazy">':'<span class="nom-search-thumb" aria-hidden="true"></span>')+'<div class="nom-search-result-copy"><div class="nom-search-kind">'+escapeHTML(kind)+'</div><strong>'+escapeHTML(title||"NOM result")+'</strong><small>'+escapeHTML(subtitle||"")+'</small></div></div>';
+}
+function renderNOMSearchResults(){
+ const source=nomSearchSource,tab=document.getElementById(source+"SearchTabs"),target=document.getElementById(source+"SearchResults");
+ if(!tab||!target)return;
+ tab.innerHTML=nomSearchTabsMarkup();
+ const groups=[
+  {key:"places",label:"Places",items:nomSearchData.places,render:p=>{const id=String(p.id??p.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");nomDetailItems[id]={id:p.id,kind:"place",name:p.name,description:p.description,location:p.location,category:p.category,price:p.price,rating:p.rating,photos:[p.image_url||p.image].filter(Boolean),videos:p.video_urls||[],attribution:p.image_attribution,license:p.image_license};return nomSearchResultRow("Place",p.name,(p.location||"")+(p.category?" · "+p.category:""),p.image_url||p.image,'openPlaceDetail(\''+escapeHTML(id)+'\')');}},
+  {key:"members",label:"Members",items:nomSearchData.members,render:p=>nomSearchResultRow("NOM member",p.display_name||p.username||"NOM member","@"+(p.username||"member")+(p.headline?" · "+p.headline:"")+(p.location?" · "+p.location:""),p.avatar_url,p.has_work_profile?'openMemberPortfolio(\''+escapeHTML(p.id)+'\')':'showPage(\'work\')')},
+  {key:"community",label:"Community",items:nomSearchData.community,render:p=>nomSearchResultRow("Community",p.title,(p.location||"")+(p.category?" · "+p.category:""),(p.photo_urls||[])[0]||"",'showPage(\'community\')')},
+  {key:"work",label:"Work",items:nomSearchData.work,render:p=>nomSearchResultRow((p.listing_type||"opportunity").replace(/_/g," "),p.title,(p.location||"Remote")+(p.work_mode?" · "+p.work_mode:"")+(p.compensation?" · "+p.compensation:""),"",'showPage(\'work\')')}
+ ];
+ const selected=nomSearchCategory==="all"?groups:groups.filter(g=>g.key===nomSearchCategory);
+ target.innerHTML=selected.map(g=>'<section class="nom-search-group"><h3>'+g.label+' <span>'+g.items.length+' found</span></h3>'+(g.items.length?g.items.slice(0,6).map(g.render).join(""):'<div class="nom-search-empty">No matching '+g.label.toLowerCase()+' yet.</div>')+'</section>').join("")||'<div class="nom-search-empty">No results found. Try another search.</div>';
+}
+function setNOMSearchView(source,active){
+ ["home","explore"].forEach(page=>{
+  const section=document.getElementById(page+"Page"),panel=document.getElementById(page+"UniversalSearch");
+  if(!section||!panel)return;
+  panel.classList.toggle("hidden",!(active&&page===source));
+  section.querySelectorAll(".categories").forEach(el=>el.style.display=active&&page===source?"none":"");
+  const cards=document.getElementById(page+"Places");if(cards)cards.style.display=active&&page===source?"none":"";
+  if(page==="explore")["importBaliButton","photosOnlyButton","placesMessage"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=active&&page===source?"none":"";});
+ });
+}
+async function searchNOM(query,source){
+ nomSearchSource=source==="explore"?"explore":"home";
+ const value=nomSearchSafeTerm(query);clearTimeout(nomSearchTimer);const requestId=++nomSearchRequestId;
+ if(!value){setNOMSearchView(nomSearchSource,false);nomSearchData={places:[],members:[],community:[],work:[]};searchPlaces("");return;}
+ setNOMSearchView(nomSearchSource,true);
+ nomSearchData={places:[],members:[],community:[],work:[]};
+ const resultTarget=document.getElementById(nomSearchSource+"SearchResults"),tabsTarget=document.getElementById(nomSearchSource+"SearchTabs");
+ if(tabsTarget)tabsTarget.innerHTML=nomSearchTabsMarkup();
+ if(resultTarget)resultTarget.innerHTML=value.length<2?'<div class="nom-search-hint">Type at least 2 characters to search NOM.</div>':'<div class="nom-search-loading">Searching NOM...</div>';
+ if(value.length<2)return;
+ nomSearchTimer=setTimeout(async()=>{
+  if(!supabaseClient){if(resultTarget)resultTarget.innerHTML='<div class="nom-search-empty">NOM search is temporarily unavailable.</div>';return;}
+  const pattern="%"+value+"%";
+  const communityPromise=supabaseClient.from("community_posts").select("id,title,description,location,category,photo_urls,video_urls,user_id,username,display_name").eq("status","published").or("title.ilike."+pattern+",description.ilike."+pattern+",location.ilike."+pattern).order("created_at",{ascending:false}).limit(12);
+  const placesPromise=loadNomPlaces(value,"All").catch(()=>[]);
+  const externalPromise=fetch(SUPABASE_URL+"/functions/v1/nom-place-search?q="+encodeURIComponent(value)+"&category=All&limit=12",{headers:{apikey:SUPABASE_KEY}}).then(r=>r.ok?r.json():{places:[]}).catch(()=>({places:[]}));
+  const [places,external,community]=await Promise.all([placesPromise,externalPromise,communityPromise]);
+  if(requestId!==nomSearchRequestId)return;
+  const mergedPlaces=new Map();
+  [...(Array.isArray(external?.places)?external.places:[]),...(Array.isArray(places)?places:[])].forEach(p=>mergedPlaces.set(String(p.source_id||p.id),{...p,id:p.id??p.source_id}));
+  let members=[],work=[];
+  if(currentUser){
+   const [profilesResult,workProfilesResult,workResult]=await Promise.all([
+    supabaseClient.from("profiles").select("id,username,display_name,avatar_url").or("username.ilike."+pattern+",display_name.ilike."+pattern).limit(15),
+    supabaseClient.from("work_profiles").select("user_id,headline,bio,location,display_name,username").or("headline.ilike."+pattern+",bio.ilike."+pattern+",location.ilike."+pattern+",display_name.ilike."+pattern+",username.ilike."+pattern).limit(15),
+    supabaseClient.from("work_listings").select("id,listing_type,title,description,location,work_mode,category,compensation,member_name,member_username").eq("status","published").or("title.ilike."+pattern+",description.ilike."+pattern+",location.ilike."+pattern+",category.ilike."+pattern).order("created_at",{ascending:false}).limit(15)
+   ]);
+   if(requestId!==nomSearchRequestId)return;
+   const profileRows=profilesResult.data||[],workRows=workProfilesResult.data||[],profileMap=new Map(profileRows.map(p=>[p.id,p]));
+   const missingIds=workRows.map(p=>p.user_id).filter(id=>!profileMap.has(id));
+   let extraProfiles=[];
+   if(missingIds.length){const extra=await supabaseClient.from("profiles").select("id,username,display_name,avatar_url").in("id",missingIds);extraProfiles=extra.data||[];}
+   const allProfiles=[...profileRows,...extraProfiles],allMap=new Map(allProfiles.map(p=>[p.id,p])),workMap=new Map(workRows.map(p=>[p.user_id,p]));
+   const memberIds=new Set([...allProfiles.map(p=>p.id),...workRows.map(p=>p.user_id)]);
+   members=[...memberIds].map(id=>{const p=allMap.get(id)||{},w=workMap.get(id)||{};return{id,username:p.username||w.username||"",display_name:p.display_name||w.display_name||"",avatar_url:p.avatar_url||"",headline:w.headline||"",location:w.location||"",has_work_profile:workMap.has(id)};});
+   work=workResult.data||[];
+  }
+  nomSearchData={places:[...mergedPlaces.values()],members,community:community.data||[],work};
+  renderNOMSearchResults();
+  const empty=Object.values(nomSearchData).every(list=>!list.length);
+  if(empty&&resultTarget)resultTarget.innerHTML='<div class="nom-search-empty">No matches found. Try a different keyword.</div>';
+  if(!currentUser&&resultTarget)resultTarget.innerHTML+='<div class="nom-search-hint">Log in to search NOM members and work opportunities. Places and community discoveries are available without signing in.</div>';
+ },260);
+}
+
+async function importBaliPlaces(){
+  const message = document.getElementById("placesMessage");
+  const button = document.getElementById("importBaliButton");
+  if(!currentUser){
+    message.textContent = "Please log in to NOM before saving places to the catalogue.";
+    showPage("profile");
+    showAuth("login");
+    return;
+  }
+
+  const {data:{session}} = await supabaseClient.auth.getSession();
+  if(!session){
+    message.textContent = "Your session has expired. Please log in again.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Importing Bali places...";
+  message.textContent = "Finding and saving up to 100 places into NOM...";
+
+  try{
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/nom-place-search`,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "apikey":SUPABASE_KEY,
+        "Authorization":`Bearer ${session.access_token}`
+      },
+      body:JSON.stringify({category:"All",limit:100,import:true})
+    });
+    const result = await response.json();
+    if(!response.ok) throw new Error(result.error || "Import failed");
+
+    message.textContent = `${result.imported} Bali places saved. ${result.photos_found || 0} have verified Commons photos with credits and licence details.`;
+    await searchPlaces(document.getElementById("exploreSearch")?.value || "");
+  }catch(error){
+    message.textContent = error.message || "Could not import places. Please try again.";
+  }finally{
+    button.disabled = false;
+    button.textContent = "Save up to 100 Bali places to NOM";
+  }
+}
+
+
+async function showCommunityComposer(){
+  if(!currentUser){showPage("profile");showAuth("signup");return;}
+  document.getElementById("communityComposer").classList.remove("hidden");
+  document.getElementById("communityMessage").textContent="";
+  document.getElementById("communityComposer").scrollIntoView({behavior:"smooth",block:"start"});
+}function hideCommunityComposer(){document.getElementById("communityComposer").classList.add("hidden");}
+function communityPostCard(post,own=false){
+  const photos=Array.isArray(post.photo_urls)?post.photo_urls:[],videos=Array.isArray(post.video_urls)?post.video_urls:[],photo=photos[0]||"",video=videos[0]||"";
+  nomDetailItems[String(post.id)]={id:post.id,kind:"community",name:post.title,description:post.description,location:post.location,category:post.category,photos,videos,author:post.username?"@"+post.username:(post.display_name||"NOM member")};
+  const status="Published on NOM";
+  const authorIdentity='<span class="nom-identity-row">'+nomAvatarMarkup(post.avatar_url,post.username||"NOM member",true)+'<span>'+escapeHTML(post.username?"@"+post.username:(post.display_name||"NOM member"))+'</span></span>';
+  const photoPreviews=photos.map(url=>'<img src="'+escapeHTML(url)+'" alt="'+escapeHTML(post.title)+'" loading="lazy">').join("");
+  const videoPreviews=videos.map(url=>'<video controls playsinline preload="metadata" src="'+escapeHTML(url)+'" onclick="event.stopPropagation()"></video>').join("");
+  const mediaCount=photos.length+videos.length;
+  return '<article class="community-post" role="button" tabindex="0" data-detail-id="'+escapeHTML(String(post.id))+'" onclick="openPlaceDetail(this.dataset.detailId)" onkeydown="if(event.key===\'Enter\'){openPlaceDetail(this.dataset.detailId)}">'+photoPreviews+videoPreviews+
+    '<div class="post-meta">'+escapeHTML(post.category||"DISCOVERY")+' · '+escapeHTML(post.location||"")+'</div>'+
+    '<h3>'+escapeHTML(post.title)+'</h3><p>'+escapeHTML(post.description)+'</p>'+
+    '<div class="post-author">Shared by '+authorIdentity+'</div>'+
+    (own?'<div class="post-status">'+status+'</div>':"")+(mediaCount?'<p class="small">'+photos.length+' photos · '+videos.length+' videos shared</p>':"")+'</article>';
+}
+
+async function loadCommunityFeed(){
+  const feed=document.getElementById("communityFeed"),mine=document.getElementById("myCommunitySubmissions");if(!feed||!mine)return;
+  const {data:published,error}=await supabaseClient.from("community_posts").select("id,user_id,title,description,location,category,photo_urls,video_urls,username,display_name,status,created_at").eq("status","published").order("created_at",{ascending:false}).limit(40);
+  const publishedAvatars=await getNomAvatarMap((published||[]).map(p=>p.user_id));
+  (published||[]).forEach(p=>p.avatar_url=publishedAvatars[p.user_id]||"");
+  feed.innerHTML=error?'<p class="small">Community discoveries are temporarily unavailable.</p>':published?.length?published.map(p=>communityPostCard(p)).join(""):'<p class="small">No community discoveries yet. Be the first to share a place.</p>';
+  if(!currentUser){mine.innerHTML='<p class="small">Log in to see the places you have submitted.</p>';return;}
+  const {data:own,error:ownError}=await supabaseClient.from("community_posts").select("id,user_id,title,description,location,category,photo_urls,video_urls,username,display_name,status,created_at").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(20);
+  const ownAvatars=await getNomAvatarMap((own||[]).map(p=>p.user_id));
+  (own||[]).forEach(p=>p.avatar_url=ownAvatars[p.user_id]||"");
+  mine.innerHTML=ownError?'<p class="small">Could not load your submissions.</p>':own?.length?own.map(p=>communityPostCard(p,true)).join(""):'<p class="small">You have not shared a place yet.</p>';
+}
+function getCommunityMediaInfo(file){
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  const mime=(file.type||"").toLowerCase();
+  const videoTypes={mp4:"video/mp4",mov:"video/quicktime",m4v:"video/x-m4v",webm:"video/webm"};
+  const imageTypes={jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp"};
+  const validVideoMimes=["video/mp4","video/webm","video/quicktime","video/x-m4v"];
+  const validImageMimes=["image/jpeg","image/png","image/webp"];
+  // On iPhone Safari, file.type can be blank or generic (for example application/octet-stream).
+  // Trust a recognized filename extension first, then use a supported MIME type as fallback.
+  const contentType=videoTypes[ext]||imageTypes[ext]||(validVideoMimes.includes(mime)||validImageMimes.includes(mime)?mime:"");
+  const isVideo=!!videoTypes[ext]||validVideoMimes.includes(contentType);
+  const supported=!!contentType&&(isVideo?validVideoMimes.includes(contentType):validImageMimes.includes(contentType));
+  return {isVideo,contentType,supported};
+}
+
+async function submitCommunityPlace(){
+  if(!currentUser){showCommunityComposer();return;}
+  const title=document.getElementById("communityTitle").value.trim(),location=document.getElementById("communityLocation").value.trim(),category=document.getElementById("communityCategory").value,description=document.getElementById("communityDescription").value.trim(),files=Array.from(document.getElementById("communityMedia").files||[]),message=document.getElementById("communityMessage"),button=document.getElementById("communitySubmit");
+  if(title.length<3||location.length<2||description.length<10){message.textContent="Please add a place name, location and a description of at least 10 characters.";return;}
+  if(files.length<1||files.length>4){message.textContent="Please choose between 1 and 4 photos/videos.";return;}
+  const mediaInfo=files.map(getCommunityMediaInfo);
+  const tooLarge=files.find(file=>file.size>50*1024*1024);
+  if(tooLarge){message.textContent=tooLarge.name+" is "+(tooLarge.size/1024/1024).toFixed(1)+" MB. NOM's limit is 50 MB per file.";return;}
+  if(files.some((file,i)=>file.size===0||!mediaInfo[i].supported)){message.textContent="NOM couldn't identify one of the selected files. Please choose a MOV, MP4, WebM, JPG, PNG or WebP file.";return;}
+  const {data:{session}}=await supabaseClient.auth.getSession();if(!session){message.textContent="Please log in again.";return;}
+  const progress=document.getElementById("communityUploadProgress"),progressBar=document.getElementById("communityUploadProgressBar");button.disabled=true;button.textContent="Uploading media...";progress.classList.remove("hidden");progressBar.style.width="0%";message.textContent="Preparing your media...";const uploaded=[],photoUrls=[],videoUrls=[];
+  try{
+    const {data:profile}=await supabaseClient.from("profiles").select("username,display_name").eq("id",currentUser.id).maybeSingle(),meta=currentUser.user_metadata||{};
+    const username=profile?.username||meta.username||"nom-member",displayName=profile?.display_name||meta.display_name||username;
+    for(let i=0;i<files.length;i++){
+      const file=files[i],{isVideo,contentType}=mediaInfo[i],ext=(file.name.split(".").pop()||"file").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin",path=currentUser.id+"/"+crypto.randomUUID()+"."+ext;
+      message.textContent="Uploading media "+(i+1)+" of "+files.length+"...";
+      let objectPath;
+      if(file.size>6*1024*1024){await uploadNomResumable(file,path,session,"community-photos",pct=>{progressBar.style.width=pct+"%";message.textContent="Uploading media "+(i+1)+" of "+files.length+" · "+pct+"%";},contentType);objectPath=path;}
+      else{const {data:up,error:upError}=await supabaseClient.storage.from("community-photos").upload(path,file,{cacheControl:"3600",upsert:false,contentType});if(upError)throw upError;objectPath=up.path;}
+      uploaded.push(objectPath);const url=supabaseClient.storage.from("community-photos").getPublicUrl(objectPath).data.publicUrl;(isVideo?videoUrls:photoUrls).push(url);
+    }
+    message.textContent="Media uploaded. Publishing your place...";
+    const {error}=await supabaseClient.from("community_posts").insert({user_id:currentUser.id,username,display_name:displayName,title,description,location,category,photo_urls:photoUrls,video_urls:videoUrls,status:"published"});
+    if(error)throw error;
+    document.getElementById("communityTitle").value="";document.getElementById("communityLocation").value="";document.getElementById("communityDescription").value="";document.getElementById("communityMedia").value="";
+    message.textContent="Your place is now live on NOM!";await loadCommunityFeed();
+  }catch(error){if(uploaded.length)await supabaseClient.storage.from("community-photos").remove(uploaded);message.textContent=error.message||"Upload failed. Please try again.";}
+  finally{button.disabled=false;button.textContent="Submit place";if(message.textContent.includes("now live")){progressBar.style.width="100%";}else{progress.classList.add("hidden");progressBar.style.width="0%";}}
+}
+
+function toggleSave(id){
+  if(savedIds.includes(id)){
+    savedIds = savedIds.filter(item=>item !== id);
+  }else{
+    savedIds.push(id);
+  }
+  localStorage.setItem("nomSaved",JSON.stringify(savedIds));
+  renderPlaces();
+  renderSaved();
+}
+
+function renderSaved(){
+  const list = places.filter(place=>savedIds.includes(place.id));
+  document.getElementById("savedPlaces").innerHTML = list.length
+    ? list.map(placeCard).join("")
+    : '<p>No saved places yet. Explore NOM and save somewhere you love.</p>';
+}
+
+/* TRIP PLANNER */
+function saveTrip(){
+  const destination = document.getElementById("tripDestination").value.trim();
+  const dates = document.getElementById("tripDates").value.trim();
+  const notes = document.getElementById("tripNotes").value.trim();
+
+  if(!destination){
+    document.getElementById("tripMessage").textContent = "Please enter a destination.";
+    return;
+  }
+
+  trips.push({
+    id:Date.now(),
+    destination,
+    dates,
+    notes
+  });
+
+  localStorage.setItem("nomTrips",JSON.stringify(trips));
+
+  document.getElementById("tripDestination").value = "";
+  document.getElementById("tripDates").value = "";
+  document.getElementById("tripNotes").value = "";
+  document.getElementById("tripMessage").textContent = "Trip saved on this device.";
+
+  renderTrips();
+}
+
+function renderTrips(){
+  const container = document.getElementById("tripList");
+
+  if(!trips.length){
+    container.innerHTML = "<p>No trips planned yet.</p>";
+    return;
+  }
+
+  container.innerHTML = trips.map(trip=>`
+    <div class="feed-card">
+      <h3>${escapeHTML(trip.destination)}</h3>
+      <p>${escapeHTML(trip.dates || "Dates not set")}</p>
+      <p>${escapeHTML(trip.notes || "")}</p>
+      <button class="text-button" onclick="deleteTrip(${trip.id})">Remove trip</button>
+    </div>
+  `).join("");
+}
+
+function deleteTrip(id){
+  trips = trips.filter(trip=>trip.id !== id);
+  localStorage.setItem("nomTrips",JSON.stringify(trips));
+  renderTrips();
+}
+
+function escapeHTML(value){
+  return String(value).replace(/[&<>"']/g,char=>({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#039;"
+  })[char]);
+}
+
+/* AUTHENTICATION */
+function showAuth(mode){
+  authMode = mode;
+  document.getElementById("authCard").classList.remove("hidden");
+  document.getElementById("authMessage").textContent = "";
+  updateAuthForm();
+}
+
+function hideAuth(){
+  document.getElementById("authCard").classList.add("hidden");
+}
+
+function switchAuth(){
+  authMode = authMode === "signup" ? "login" : "signup";
+  document.getElementById("authMessage").textContent = "";
+  updateAuthForm();
+}
+
+function updateAuthForm(){
+  const signup = authMode === "signup";
+
+  document.getElementById("authTitle").textContent =
+    signup ? "Create your account" : "Welcome back";
+
+  document.getElementById("authDescription").textContent =
+    signup ? "Join the NOM community." : "Log in to continue your journey.";
+
+  document.getElementById("signupFields").classList.toggle("hidden",!signup);
+
+  document.getElementById("authSubmit").textContent =
+    signup ? "Create account" : "Log in";
+
+  document.getElementById("authSwitch").textContent =
+    signup ? "Already have an account? Log in" : "New to NOM? Create an account";
+}
+
+async function handleRegistrationAvatar(input){
+  const file=input.files?.[0],preview=document.getElementById("avatarPreview");
+  if(!file){preview.classList.add("hidden");preview.removeAttribute("src");return;}
+  if(!["image/jpeg","image/png","image/webp"].includes(file.type)){input.value="";alert("Please choose a JPG, PNG or WebP image.");return;}
+  if(file.size>8*1024*1024){input.value="";alert("Please choose an image smaller than 8 MB.");return;}
+  try{
+    const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error("Could not read that image."));reader.readAsDataURL(file);});
+    const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error("This image could not be opened."));img.src=dataUrl;});
+    const size=320,canvas=document.createElement("canvas");canvas.width=size;canvas.height=size;
+    const ctx=canvas.getContext("2d"),crop=Math.min(image.width,image.height),sx=(image.width-crop)/2,sy=(image.height-crop)/2;
+    ctx.drawImage(image,sx,sy,crop,crop,0,0,size,size);
+    const compressed=canvas.toDataURL("image/jpeg",0.82);
+    localStorage.setItem("nomPendingRegistrationAvatar",JSON.stringify({email:"",dataUrl:compressed,createdAt:Date.now()}));
+    preview.src=compressed;preview.classList.remove("hidden");
+  }catch(error){input.value="";preview.classList.add("hidden");alert(error.message||"Could not prepare that image.");}
+}
+
+let nomAvatarUploadInProgress=false;
+async function uploadPendingRegistrationAvatar(user){
+  if(!user||!supabaseClient||nomAvatarUploadInProgress)return;
+  let pending;try{pending=JSON.parse(localStorage.getItem("nomPendingRegistrationAvatar")||"null");}catch(_){pending=null;}
+  if(!pending?.dataUrl)return;
+  if(pending.email&&pending.email.toLowerCase()!==(user.email||"").toLowerCase())return;
+  nomAvatarUploadInProgress=true;let path=null;
+  try{
+    const blob=await (await fetch(pending.dataUrl)).blob();
+    if(blob.size>2097152)throw new Error("Profile picture is larger than the 2 MB limit after resizing.");
+    path=user.id+"/"+crypto.randomUUID()+".jpg";
+    const {error:uploadError}=await supabaseClient.storage.from("avatars").upload(path,blob,{contentType:"image/jpeg",cacheControl:"3600",upsert:false});
+    if(uploadError)throw uploadError;
+    const avatarUrl=supabaseClient.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+    const {error:profileError}=await supabaseClient.from("profiles").update({avatar_url:avatarUrl,updated_at:new Date().toISOString()}).eq("id",user.id);
+    if(profileError){await supabaseClient.storage.from("avatars").remove([path]);throw profileError;}
+    localStorage.removeItem("nomPendingRegistrationAvatar");
+    await loadAccountAvatar(user.id);
+    const message=document.getElementById("authMessage");if(message)message.textContent="Profile picture saved to your NOM account.";
+  }finally{nomAvatarUploadInProgress=false;}
+}
+
+async function loadAccountAvatar(userId){
+  const image=document.getElementById("loggedInAvatar"),headerImage=document.getElementById("headerAccountAvatar"),fallback=document.getElementById("headerAvatarFallback");
+  if(!userId){
+    [image,headerImage].forEach(el=>{if(el){el.classList.add("hidden");el.removeAttribute("src");}});
+    fallback?.classList.add("hidden");
+    return;
+  }
+  const {data,error}=await supabaseClient.from("profiles").select("avatar_url").eq("id",userId).maybeSingle();
+  const avatarUrl=!error&&data?.avatar_url&&/^https:\/\//i.test(data.avatar_url)?data.avatar_url:"";
+  if(image){
+    if(avatarUrl){image.src=avatarUrl;image.classList.remove("hidden");}
+    else{image.classList.add("hidden");image.removeAttribute("src");}
+  }
+  if(headerImage&&fallback){
+    if(avatarUrl){
+      headerImage.onerror=()=>{headerImage.classList.add("hidden");headerImage.removeAttribute("src");fallback.classList.remove("hidden");};
+      headerImage.onload=()=>fallback.classList.add("hidden");
+      headerImage.src=avatarUrl;
+      headerImage.classList.remove("hidden");
+      fallback.classList.add("hidden");
+    }else{
+      headerImage.classList.add("hidden");headerImage.removeAttribute("src");fallback.classList.remove("hidden");
+    }
+  }
+}
+
+let existingAvatarDataUrl=null;
+async function previewExistingAvatar(input){
+  const file=input.files?.[0],preview=document.getElementById("existingAvatarPreview"),button=document.getElementById("saveExistingAvatar"),message=document.getElementById("existingAvatarMessage");
+  existingAvatarDataUrl=null;button.classList.add("hidden");message.textContent="";
+  if(!file){preview.classList.add("hidden");preview.removeAttribute("src");return;}
+  if(!["image/jpeg","image/png","image/webp"].includes(file.type)){input.value="";message.textContent="Please choose a JPG, PNG or WebP image.";preview.classList.add("hidden");return;}
+  if(file.size>8*1024*1024){input.value="";message.textContent="Please choose an image smaller than 8 MB.";preview.classList.add("hidden");return;}
+  try{
+    const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error("Could not read that image."));reader.readAsDataURL(file);});
+    const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error("This image could not be opened."));img.src=dataUrl;});
+    const size=320,canvas=document.createElement("canvas");canvas.width=size;canvas.height=size;
+    const ctx=canvas.getContext("2d"),crop=Math.min(image.width,image.height),sx=(image.width-crop)/2,sy=(image.height-crop)/2;
+    ctx.drawImage(image,sx,sy,crop,crop,0,0,size,size);
+    existingAvatarDataUrl=canvas.toDataURL("image/jpeg",0.82);
+    preview.src=existingAvatarDataUrl;preview.classList.remove("hidden");button.classList.remove("hidden");
+  }catch(error){input.value="";message.textContent=error.message||"Could not prepare that image.";preview.classList.add("hidden");}
+}
+
+async function saveExistingAvatar(){
+  const message=document.getElementById("existingAvatarMessage"),button=document.getElementById("saveExistingAvatar"),input=document.getElementById("existingAvatarFile");
+  if(!currentUser||!supabaseClient||!existingAvatarDataUrl){message.textContent="Choose a profile picture first.";return;}
+  button.disabled=true;button.textContent="Uploading...";message.textContent="Uploading your profile picture...";
+  let path=null;
+  try{
+    const blob=await (await fetch(existingAvatarDataUrl)).blob();
+    if(blob.size>2097152)throw new Error("The resized image is larger than 2 MB. Please choose another photo.");
+    path=currentUser.id+"/"+crypto.randomUUID()+".jpg";
+    const {error:uploadError}=await supabaseClient.storage.from("avatars").upload(path,blob,{contentType:"image/jpeg",cacheControl:"3600",upsert:false});
+    if(uploadError)throw uploadError;
+    const avatarUrl=supabaseClient.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+    const {error:profileError}=await supabaseClient.from("profiles").update({avatar_url:avatarUrl,updated_at:new Date().toISOString()}).eq("id",currentUser.id);
+    if(profileError){await supabaseClient.storage.from("avatars").remove([path]);throw profileError;}
+    await loadAccountAvatar(currentUser.id);
+    existingAvatarDataUrl=null;input.value="";document.getElementById("existingAvatarPreview").classList.add("hidden");button.classList.add("hidden");
+    message.textContent="Your profile picture has been updated.";
+  }catch(error){message.textContent=error.message||"Unable to update your profile picture.";}
+  finally{button.disabled=false;button.textContent="Save profile picture";}
+}
+
+async function submitAuth(){
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const message = document.getElementById("authMessage");
+
+  message.textContent = "";
+
+  if(!email || !password){
+    message.textContent = "Please enter your email and password.";
+    return;
+  }
+
+  if(password.length < 6){
+    message.textContent = "Password must be at least 6 characters.";
+    return;
+  }
+
+  const submitButton = document.getElementById("authSubmit");
+  submitButton.disabled = true;
+  submitButton.textContent = "Please wait...";
+
+  try{
+    if(authMode === "signup"){
+      const displayName = document.getElementById("displayName").value.trim();
+      const username = document.getElementById("username").value.trim();
+      const pendingAvatar=localStorage.getItem("nomPendingRegistrationAvatar");
+      if(pendingAvatar){try{const parsed=JSON.parse(pendingAvatar);parsed.email=email.toLowerCase();localStorage.setItem("nomPendingRegistrationAvatar",JSON.stringify(parsed));}catch(_){}}
+
+      if(!displayName || !username){
+        message.textContent = "Please enter your name and username.";
+        return;
+      }
+
+      const {data,error} = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options:{
+          emailRedirectTo:"https://nommobileapp.github.io/nom-lifestyle-mockup/",
+          data:{
+            display_name:displayName,
+            username:username
+          }
+        }
+      });
+
+      if(error){localStorage.removeItem("nomPendingRegistrationAvatar");throw error;}
+
+      if(data.session){
+        currentUser = data.user;
+        message.textContent = "Account created successfully.";
+        updateProfile();
+        await uploadPendingRegistrationAvatar(data.user);
+      }else{
+        message.textContent = "Registration received. Please confirm your email. Your selected profile picture will be added when you sign in after confirmation.";
+      }
+
+    }else{
+      const {data,error} = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if(error) throw error;
+
+      currentUser = data.user;
+      message.textContent = "Login successful.";
+      updateProfile();
+      await uploadPendingRegistrationAvatar(data.user);
+    }
+
+  }catch(error){
+    message.textContent = error.message || "Something went wrong. Please try again.";
+  }finally{
+    submitButton.disabled = false;
+    updateAuthForm();
+  }
+}
+
+function updateProfile(){
+  const profileInfo = document.getElementById("profileInfo");
+  const loggedInPanel = document.getElementById("loggedInPanel");
+  const accountLabel = document.getElementById("headerAccountLabel");
+  const headerImage = document.getElementById("headerAccountAvatar");
+  const fallback = document.getElementById("headerAvatarFallback");
+
+  if(currentUser){
+    profileInfo.classList.add("hidden");
+    loggedInPanel.classList.remove("hidden");
+
+    const metadata = currentUser.user_metadata || {};
+    const publicUsername = metadata.username ? "@" + metadata.username : "NOM MEMBER";
+    document.getElementById("loggedInName").textContent = publicUsername;
+    accountLabel.textContent = publicUsername;
+    fallback.textContent = (metadata.username || "N").charAt(0).toUpperCase();
+    fallback.classList.remove("hidden");
+    headerImage.classList.add("hidden");
+    setTimeout(()=>loadAccountAvatar(currentUser.id),0);
+    hideAuth();
+  }else{
+    profileInfo.classList.remove("hidden");
+    loggedInPanel.classList.add("hidden");
+    accountLabel.textContent = "Log in / Join";
+    headerImage.classList.add("hidden");
+    headerImage.removeAttribute("src");
+    fallback.classList.add("hidden");
+  }
+}
+
+async function logout(){
+  const message = document.getElementById("logoutMessage");
+
+  try{
+    const {error} = await supabaseClient.auth.signOut();
+    if(error) throw error;
+
+    currentUser = null;
+    updateProfile();
+    message.textContent = "You have logged out.";
+  }catch(error){
+    message.textContent = error.message || "Unable to log out.";
+  }
+}
+
+/* RESTORE LOGIN SESSION */
+async function initialiseApp(){
+  if(!supabaseClient){
+    console.error("NOM: Supabase SDK did not load; public navigation remains available.");
+    return;
+  }
+  try{
+    const {data,error} = await supabaseClient.auth.getSession();
+    if(error) throw error;
+
+    currentUser = data.session ? data.session.user : null;
+    updateProfile();
+    if(currentUser){startNomNotificationListener();uploadPendingRegistrationAvatar(currentUser).catch(error=>console.warn("NOM avatar upload:",error.message));}
+
+    supabaseClient.auth.onAuthStateChange((_event,session)=>{
+      const previousUserId=currentUser?.id||null;
+      currentUser = session ? session.user : null;
+      const nextUserId=currentUser?.id||null;
+      updateProfile();
+      if(currentUser){
+        startNomNotificationListener();
+        setTimeout(()=>uploadPendingRegistrationAvatar(currentUser).catch(error=>console.warn("NOM avatar upload:",error.message)),0);
+      }else{if(nomNotificationChannel){supabaseClient.removeChannel(nomNotificationChannel);nomNotificationChannel=null;}renderNomUnreadBadges(0);}
+      if(previousUserId!==nextUserId){
+        const ownMedia=document.getElementById("workPortfolioMedia");
+        const publicPanel=document.getElementById("workPublicPortfolio");
+        const publicContent=document.getElementById("workPublicPortfolioContent");
+        if(ownMedia)ownMedia.innerHTML="";
+        if(publicPanel)publicPanel.classList.add("hidden");
+        if(publicContent)publicContent.innerHTML="";
+        const workPage=document.getElementById("workPage");
+        if(currentUser&&workPage&&!workPage.classList.contains("hidden"))openWork();
+        else if(!currentUser){
+          document.getElementById("workMemberGate")?.classList.remove("hidden");
+          document.getElementById("workMemberTools")?.classList.add("hidden");
+          const directory=document.getElementById("workDirectory");
+          if(directory)directory.innerHTML='<p class="small">Join NOM or log in to discover member portfolios.</p>';
+        }
+      }
+    });
+
+  }catch(error){
+    console.error("NOM authentication:",error.message);
+  }
+}
+
+/* START NOM */
+document.getElementById("homePlaces").innerHTML = '<p class="small">Loading places from NOM...</p>';
+document.getElementById("explorePlaces").innerHTML = '<p class="small">Loading places from NOM...</p>';
+searchPlaces("");
+renderSaved();
+renderTrips();
+initialiseApp();
+</script>
+
+</body>
+</html>
