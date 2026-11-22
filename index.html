@@ -913,18 +913,20 @@ function nomSearchTabsMarkup(){
  const counts={all:nomSearchData.places.length+nomSearchData.members.length+nomSearchData.community.length+nomSearchData.work.length,places:nomSearchData.places.length,members:nomSearchData.members.length,community:nomSearchData.community.length,work:nomSearchData.work.length};
  return [["all","All"],["places","Places"],["members","Members"],["community","Community"],["work","Work"]].map(([key,label])=>'<button type="button" class="nom-search-tab '+(nomSearchCategory===key?"active":"")+'" onclick="setNomSearchCategory(\''+key+'\')">'+label+' · '+counts[key]+'</button>').join("");
 }
-function nomSearchResultRow(kind,title,subtitle,image,action){
+function nomSearchResultRow(kind,title,subtitle,image,action,saveId){
  const safeImage=typeof image==="string"&&image.startsWith("https://")?image:"";
  const fallback=kind.toLowerCase().includes("place")?"🍽️":"👤";
  const thumb=safeImage?'<img class="nom-search-thumb" src="'+escapeHTML(safeImage)+'" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><span class="nom-search-thumb nom-search-placeholder" aria-hidden="true" style="display:none">'+fallback+'</span>':'<span class="nom-search-thumb nom-search-placeholder" aria-hidden="true">'+fallback+'</span>';
- return '<div class="nom-search-result" '+(action?'onclick="'+action+'" role="button" tabindex="0"':'')+'>'+thumb+'<div class="nom-search-result-copy"><div class="nom-search-kind">'+escapeHTML(kind)+'</div><strong>'+escapeHTML(title||"NOM result")+'</strong><small>'+escapeHTML(subtitle||"")+'</small></div></div>';
+ const saved=saveId!==undefined&&savedIds.map(String).includes(String(saveId));
+ const saveButton=saveId!==undefined?'<button type="button" class="save-button nom-search-save" data-save-id="'+escapeHTML(String(saveId))+'" onclick="event.stopPropagation();saveNomSearchPlace(this.dataset.saveId)">'+(saved?"♥ Saved":"♡ Save")+'</button>':"";
+ return '<div class="nom-search-result" '+(action?'onclick="'+action+'" role="button" tabindex="0"':'')+'>'+thumb+'<div class="nom-search-result-copy"><div class="nom-search-kind">'+escapeHTML(kind)+'</div><strong>'+escapeHTML(title||"NOM result")+'</strong><small>'+escapeHTML(subtitle||"")+'</small></div>'+saveButton+'</div>';
 }
 function renderNOMSearchResults(){
  const source=nomSearchSource,tab=document.getElementById(source+"SearchTabs"),target=document.getElementById(source+"SearchResults");
  if(!tab||!target)return;
  tab.innerHTML=nomSearchTabsMarkup();
  const groups=[
-  {key:"places",label:"Places",items:nomSearchData.places,render:p=>{const id=String(p.id??p.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");nomDetailItems[id]={id:p.id,kind:"place",name:p.name,description:p.description,location:p.location,category:p.category,price:p.price,rating:p.rating,photos:[p.image_url||p.image].filter(Boolean),videos:p.video_urls||[],attribution:p.image_attribution,license:p.image_license};return nomSearchResultRow(p.source?"External place · OSM":"NOM place",p.name,(p.location||"")+(p.category?" · "+p.category:""),p.image_url||p.image,'openPlaceDetail(\''+escapeHTML(id)+'\')');}},
+  {key:"places",label:"Places",items:nomSearchData.places,render:p=>{const id=String(p.id??p.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");nomDetailItems[id]={id:p.id??p.source_id,kind:"place",name:p.name,description:p.description,location:p.location,category:p.category,price:p.price,rating:p.rating,photos:[p.image_url||p.image].filter(Boolean),videos:p.video_urls||[],attribution:p.image_attribution,license:p.image_license};return nomSearchResultRow(p.source?"External place · OSM":"NOM place",p.name,(p.location||"")+(p.category?" · "+p.category:""),p.image_url||p.image,'openPlaceDetail(\''+escapeHTML(id)+'\')',p.id??p.source_id);}},
   {key:"members",label:"Members",items:nomSearchData.members,render:p=>nomSearchResultRow("NOM member",p.display_name||p.username||"NOM member","@"+(p.username||"member")+(p.headline?" · "+p.headline:"")+(p.location?" · "+p.location:""),p.avatar_url,p.has_work_profile?'openMemberPortfolio(\''+escapeHTML(p.id)+'\')':'showPage(\'work\')')},
   {key:"community",label:"Community",items:nomSearchData.community,render:p=>nomSearchResultRow("Community",p.title,(p.location||"")+(p.category?" · "+p.category:""),(p.photo_urls||[])[0]||"",'showPage(\'community\')')},
   {key:"work",label:"Work",items:nomSearchData.work,render:p=>nomSearchResultRow((p.listing_type||"opportunity").replace(/_/g," "),p.title,(p.location||"Remote")+(p.work_mode?" · "+p.work_mode:"")+(p.compensation?" · "+p.compensation:""),"",'showPage(\'work\')')}
@@ -1112,7 +1114,20 @@ async function submitCommunityPlace(){
   finally{button.disabled=false;button.textContent="Submit place";if(message.textContent.includes("now live")){progressBar.style.width="100%";}else{progress.classList.add("hidden");progressBar.style.width="0%";}}
 }
 
+function saveNomSearchPlace(id){
+ const key=String(id);
+ const item=Object.values(nomDetailItems).find(place=>String(place.id)===key);
+ if(!item)return;
+ const record={...item,id:key,image_url:(item.photos||[])[0]||null,image:(item.photos||[])[0]||null,video_urls:item.videos||[]};
+ places=places.filter(place=>String(place.id)!==key);
+ places.push(record);
+ currentResults=mergePlaceRecords([...currentResults,record]);
+ toggleSave(key);
+ renderNOMSearchResults();
+}
 function toggleSave(id){
+  id=String(id);
+  savedIds=savedIds.map(String);
   if(savedIds.includes(id)){
     savedIds = savedIds.filter(item=>item !== id);
   }else{
@@ -1124,7 +1139,7 @@ function toggleSave(id){
 }
 
 function renderSaved(){
-  const list = places.filter(place=>savedIds.includes(place.id));
+  const list = places.filter(place=>savedIds.includes(String(place.id)));
   document.getElementById("savedPlaces").innerHTML = list.length
     ? list.map(placeCard).join("")
     : '<p>No saved places yet. Explore NOM and save somewhere you love.</p>';
