@@ -8,9 +8,6 @@
 <title>NOM — Journey Beyond</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
 
 <style>
@@ -256,25 +253,6 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 .nom-search-kind{color:var(--orange);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
 .nom-search-empty,.nom-search-hint{font-size:12px;color:var(--muted);padding:12px 2px}
 .nom-search-loading{color:var(--lime);font-size:12px;padding:14px 2px}
-/* NOM Explore — lightweight interactive 2D map */
-.nom-explore-view-toggle{display:flex;gap:8px;margin:12px 0 14px}
-.nom-explore-view-toggle button{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:24px;background:var(--panel);color:var(--white);font-weight:700}
-.nom-explore-view-toggle button.active{background:var(--lime);border-color:var(--lime);color:#111}
-#nomExploreMap{height:min(62vh,540px);min-height:360px;border:1px solid #303336;border-radius:18px;overflow:hidden;background:#171b1d;position:relative;z-index:1}
-#nomExploreMap.hidden{display:none!important}
-#nomExploreMap .leaflet-container{height:100%;width:100%;font-family:Arial,Helvetica,sans-serif;background:#171b1d}
-#nomExploreMap .leaflet-popup-content-wrapper,#nomExploreMap .leaflet-popup-tip{background:#1b1d1f;color:#f5f5f2}
-#nomExploreMap .leaflet-popup-content{margin:12px;min-width:190px}
-.nom-map-popup strong{display:block;font-size:14px;margin-bottom:5px;color:#f5f5f2}
-.nom-map-popup small{display:block;color:#b0b4b7;font-size:11px;line-height:1.4;margin-bottom:10px}
-.nom-map-popup-actions{display:flex;gap:7px;flex-wrap:wrap}
-.nom-map-popup-actions a,.nom-map-popup-actions button{display:inline-flex;align-items:center;justify-content:center;padding:9px 11px;border:0;border-radius:18px;background:#ff7a24;color:#111;font-weight:700;text-decoration:none;font-size:11px}
-.nom-map-popup-actions a.secondary,.nom-map-popup-actions button.secondary{background:#292d30;color:#f5f5f2;border:1px solid #45494c}
-.nom-map-message{font-size:12px;color:var(--muted);margin:8px 2px 12px;min-height:18px}
-.nom-map-pin{width:24px;height:24px;border-radius:50% 50% 50% 0;background:#ff7a24;border:3px solid #fff;transform:rotate(-45deg);box-shadow:0 2px 9px #0009}
-.nom-map-pin:after{content:"";display:block;width:7px;height:7px;margin:5px;border-radius:50%;background:#171717}
-
-
 </style>
 </head>
 
@@ -321,9 +299,6 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
   <div class="eyebrow">EXPLORE</div>
   <h1>Find your next destination.</h1>
   <input class="search" id="exploreSearch" placeholder="Search places, members, community, work..." oninput="searchNOM(this.value,'explore')"><div class="nom-universal-search hidden" id="exploreUniversalSearch"><div class="nom-search-tabs" id="exploreSearchTabs"></div><div id="exploreSearchResults" aria-live="polite"><div class="nom-search-hint">Search across NOM.</div></div></div>
-  <div class="nom-explore-view-toggle" aria-label="Explore view"><button type="button" id="nomExploreListButton" class="active" aria-pressed="true" onclick="setExploreView('list')">☷ List</button><button type="button" id="nomExploreMapButton" aria-pressed="false" onclick="setExploreView('map')">⌖ Map</button></div>
-  <div id="nomExploreMap" class="hidden" role="region" aria-label="Interactive NOM map"></div><p id="nomMapMessage" class="nom-map-message hidden">Search for a place to see it on the map.</p>
-
   <div class="categories">
     <button class="category active" onclick="filterPlaces('All',this)">All</button>
     <button class="category" onclick="filterPlaces('Nature',this)">Nature</button>
@@ -703,9 +678,8 @@ function openPlaceDetail(id){
  const gallery=photos.length||videos.length?'<div class="detail-gallery">'+photos.map(url=>'<img src="'+escapeHTML(url)+'" alt="'+escapeHTML(item.name)+'" loading="lazy">').join('')+videos.map(url=>'<video controls playsinline preload="metadata" src="'+escapeHTML(url)+'"></video>').join('')+'</div>':'';
  const rating=item.rating?'★ '+item.rating:'';
  const save=item.kind==='place'?'<button class="primary" data-place-id="'+escapeHTML(String(item.id))+'" onclick="toggleSave(this.dataset.placeId);closePlaceDetail()">♡ Save this place</button>':'';
- const directions=item.kind==='place'&&Number.isFinite(Number(item.lat))&&Number.isFinite(Number(item.lng))?'<div class="nom-directions"><a href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(item.lat+','+item.lng)+'" target="_blank" rel="noopener">Google Maps ↗</a><a class="secondary" href="https://waze.com/ul?ll='+encodeURIComponent(item.lat+','+item.lng)+'&navigate=yes" target="_blank" rel="noopener">Waze ↗</a></div>':'';
  const credit=item.attribution?'<p class="detail-credit">Photo: '+escapeHTML(item.attribution)+' · '+escapeHTML(item.license||'Licence details unavailable')+'</p>':'';
- document.getElementById('placeDetailBody').innerHTML=gallery+'<div class="detail-copy"><div class="eyebrow">'+escapeHTML((item.category||'DISCOVERY').toUpperCase())+(rating?' · '+escapeHTML(rating):'')+'</div><h1>'+escapeHTML(item.name)+'</h1><div class="detail-location">'+escapeHTML(item.location||'')+(item.price?' · '+escapeHTML(item.price):'')+'</div><p class="detail-description">'+escapeHTML(item.description||'')+'</p>'+(item.author?'<p class="small">Shared by '+escapeHTML(item.author)+'</p>':'')+save+directions+credit+'</div>';
+ document.getElementById('placeDetailBody').innerHTML=gallery+'<div class="detail-copy"><div class="eyebrow">'+escapeHTML((item.category||'DISCOVERY').toUpperCase())+(rating?' · '+escapeHTML(rating):'')+'</div><h1>'+escapeHTML(item.name)+'</h1><div class="detail-location">'+escapeHTML(item.location||'')+(item.price?' · '+escapeHTML(item.price):'')+'</div><p class="detail-description">'+escapeHTML(item.description||'')+'</p>'+(item.author?'<p class="small">Shared by '+escapeHTML(item.author)+'</p>':'')+save+credit+'</div>';
  const overlay=document.getElementById('placeDetailOverlay');
  if(!detailHistoryOpen){
    history.pushState({...history.state,nomPlaceDetail:true},'',location.pathname+location.search+'#place-detail');
@@ -732,7 +706,7 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')closePlaceDe
 
 function placeCard(place){
   const isSaved = savedIds.includes(place.id);
-  const placeCoords=getNomPlaceCoordinates(place);nomDetailItems[String(place.id)]={id:place.id,kind:'place',name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],author:place.community_author,attribution:place.image_attribution,license:place.image_license,lat:placeCoords?.lat,lng:placeCoords?.lng};
+  nomDetailItems[String(place.id)]={id:place.id,kind:'place',name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],author:place.community_author,attribution:place.image_attribution,license:place.image_license};
   const image = place.image_url || place.image || "";
   const rating = place.rating ? "★ " + place.rating : "";
   const photoCredit = place.image_attribution
@@ -769,70 +743,6 @@ function hasPlaceImage(place){
   return (typeof image === "string" && (image.trim().startsWith("https://") || image.trim().startsWith("http://"))) || (Array.isArray(place.video_urls) && place.video_urls.some(url=>typeof url==="string" && (url.startsWith("https://") || url.startsWith("http://"))));
 }
 
-
-let nomMapInstance=null,nomMapLayer=null,exploreDisplayMode="list",nomSelectedMapPlace=null;
-function getNomPlaceCoordinates(place){
- const lat=Number(place?.lat??place?.latitude??place?.geometry?.coordinates?.[1]);
- const lng=Number(place?.lon??place?.lng??place?.longitude??place?.geometry?.coordinates?.[0]);
- return Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180?{lat,lng}:null;
-}
-function setExploreView(mode){
- exploreDisplayMode=mode==="map"?"map":"list";
- const mapMode=exploreDisplayMode==="map";
- const mapElement=document.getElementById("nomExploreMap");
- mapElement?.classList.toggle("hidden",!mapMode);
- document.getElementById("nomMapMessage")?.classList.toggle("hidden",!mapMode);
- const searching=document.getElementById("exploreUniversalSearch")&&!document.getElementById("exploreUniversalSearch").classList.contains("hidden");
- const cards=document.getElementById("explorePlaces");if(cards)cards.style.display=(mapMode||searching)?"none":"";
- const categories=document.querySelector("#explorePage .categories");if(categories)categories.style.display=(mapMode||searching)?"none":"";
- ["importBaliButton","photosOnlyButton","placesMessage"].forEach(id=>{const item=document.getElementById(id);if(item)item.style.display=(mapMode||searching)?"none":"";});
- const listButton=document.getElementById("nomExploreListButton"),mapButton=document.getElementById("nomExploreMapButton");
- if(listButton){listButton.classList.toggle("active",!mapMode);listButton.setAttribute("aria-pressed",String(!mapMode));}
- if(mapButton){mapButton.classList.toggle("active",mapMode);mapButton.setAttribute("aria-pressed",String(mapMode));}
- if(mapMode){
-  const universal=document.getElementById("exploreUniversalSearch");
-  renderExploreMap(universal&&!universal.classList.contains("hidden")?nomSearchData.places:currentResults);
-  setTimeout(()=>{if(nomMapInstance)nomMapInstance.invalidateSize();},80);
- }
-}
-function selectNOMPlaceOnMap(id){
- const key=String(id);
- const place=[...(nomSearchData.places||[]),...(currentResults||[])].find(p=>String(p.id??p.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"")===key);
- if(!place)return;
- nomSelectedMapPlace=place;
- setExploreView("map");
- renderExploreMap([place]);
-}
-function renderExploreMap(list=currentResults){
- const element=document.getElementById("nomExploreMap");if(!element)return;
- const records=nomSelectedMapPlace?[nomSelectedMapPlace]:(Array.isArray(list)?list:[]);
- const points=records.map(place=>({place,coords:getNomPlaceCoordinates(place)})).filter(item=>item.coords);
- const message=document.getElementById("nomMapMessage");
- if(message)message.textContent=points.length?(nomSelectedMapPlace?"Selected place · tap the orange pin for directions":"Tap a pin to view the place and directions"):(records.length?"These results don't include map coordinates yet. Try another place search.":"Search for a place to see it on the map.");
- if(!window.L)return;
- if(!nomMapInstance){
-  nomMapInstance=L.map(element,{zoomControl:true,scrollWheelZoom:false,tap:true}).setView([ -8.65,115.22 ],11);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(nomMapInstance);
-  nomMapLayer=L.layerGroup().addTo(nomMapInstance);
- }
- nomMapLayer.clearLayers();
- points.forEach(({place,coords})=>{
-  const id=String(place.id??place.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");
-  nomDetailItems[id]={id:place.id??place.source_id,kind:"place",name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],attribution:place.image_attribution,license:place.image_license,lat:coords.lat,lng:coords.lng};
-  const google="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(coords.lat+","+coords.lng)+"&travelmode=driving";
-  const waze="https://waze.com/ul?ll="+encodeURIComponent(coords.lat+","+coords.lng)+"&navigate=yes";
-  const popup='<div class="nom-map-popup"><strong>'+escapeHTML(place.name||"NOM place")+'</strong><small>'+escapeHTML(place.location||place.category||"Selected place")+'</small><div class="nom-map-popup-actions"><a href="'+google+'" target="_blank" rel="noopener">Google Maps</a><a class="secondary" href="'+waze+'" target="_blank" rel="noopener">Waze</a><button class="secondary" type="button" onclick="openPlaceDetail(\''+escapeHTML(id)+'\')">Details</button></div></div>';
-  const pin=L.divIcon({className:"",html:'<div class="nom-map-pin"></div>',iconSize:[30,36],iconAnchor:[15,32],popupAnchor:[0,-30]});
-  L.marker([coords.lat,coords.lng],{icon:pin}).bindPopup(popup,{closeButton:true,autoPan:true}).addTo(nomMapLayer);
- });
- if(points.length){
-  if(nomSelectedMapPlace){nomMapInstance.setView([points[0].coords.lat,points[0].coords.lng],16);}
-  else if(points.length===1){nomMapInstance.setView([points[0].coords.lat,points[0].coords.lng],14);}
-  else{const bounds=L.latLngBounds(points.map(item=>[item.coords.lat,item.coords.lng]));nomMapInstance.fitBounds(bounds.pad(0.18),{maxZoom:14});}
- }
- requestAnimationFrame(()=>nomMapInstance&&nomMapInstance.invalidateSize());
-}
-
 function renderPlaces(list=currentResults){
   const safeList=Array.isArray(list)?list.filter(Boolean):[];
   const visibleList=photosOnly?safeList.filter(hasPlaceImage):safeList;
@@ -850,9 +760,7 @@ function renderPlaces(list=currentResults){
   const explore=document.getElementById("explorePlaces");
   if(home)home.innerHTML=empty;
   if(explore)explore.innerHTML=empty;
-  renderExploreMap(safeList);
 }
-
 
 function togglePhotosOnly(){
   photosOnly = !photosOnly;
@@ -1016,14 +924,13 @@ function renderNOMSearchResults(){
  if(!tab||!target)return;
  tab.innerHTML=nomSearchTabsMarkup();
  const groups=[
-  {key:"places",label:"Places",items:nomSearchData.places,render:p=>{const id=String(p.id??p.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");nomDetailItems[id]={id:p.id,kind:"place",name:p.name,description:p.description,location:p.location,category:p.category,price:p.price,rating:p.rating,photos:[p.image_url||p.image].filter(Boolean),videos:p.video_urls||[],attribution:p.image_attribution,license:p.image_license};return nomSearchResultRow(p.source?"External place · OSM":"NOM place",p.name,(p.location||"")+(p.category?" · "+p.category:""),p.image_url||p.image,'selectNOMPlaceOnMap(\''+escapeHTML(id)+'\')');}},
+  {key:"places",label:"Places",items:nomSearchData.places,render:p=>{const id=String(p.id??p.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");nomDetailItems[id]={id:p.id,kind:"place",name:p.name,description:p.description,location:p.location,category:p.category,price:p.price,rating:p.rating,photos:[p.image_url||p.image].filter(Boolean),videos:p.video_urls||[],attribution:p.image_attribution,license:p.image_license};return nomSearchResultRow(p.source?"External place · OSM":"NOM place",p.name,(p.location||"")+(p.category?" · "+p.category:""),p.image_url||p.image,'openPlaceDetail(\''+escapeHTML(id)+'\')');}},
   {key:"members",label:"Members",items:nomSearchData.members,render:p=>nomSearchResultRow("NOM member",p.display_name||p.username||"NOM member","@"+(p.username||"member")+(p.headline?" · "+p.headline:"")+(p.location?" · "+p.location:""),p.avatar_url,p.has_work_profile?'openMemberPortfolio(\''+escapeHTML(p.id)+'\')':'showPage(\'work\')')},
   {key:"community",label:"Community",items:nomSearchData.community,render:p=>nomSearchResultRow("Community",p.title,(p.location||"")+(p.category?" · "+p.category:""),(p.photo_urls||[])[0]||"",'showPage(\'community\')')},
   {key:"work",label:"Work",items:nomSearchData.work,render:p=>nomSearchResultRow((p.listing_type||"opportunity").replace(/_/g," "),p.title,(p.location||"Remote")+(p.work_mode?" · "+p.work_mode:"")+(p.compensation?" · "+p.compensation:""),"",'showPage(\'work\')')}
  ];
  const selected=nomSearchCategory==="all"?groups:groups.filter(g=>g.key===nomSearchCategory);
  target.innerHTML=selected.map(g=>'<section class="nom-search-group"><h3>'+g.label+' <span>'+g.items.length+' found</span></h3>'+(g.items.length?g.items.slice(0,6).map(g.render).join(""):'<div class="nom-search-empty">No matching '+g.label.toLowerCase()+' yet.</div>')+'</section>').join("")||'<div class="nom-search-empty">No results found. Try another search.</div>';
- renderExploreMap(nomSearchData.places);
 }
 function setNOMSearchView(source,active){
  ["home","explore"].forEach(page=>{
