@@ -453,13 +453,16 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 
 <div id="nomMusicPanel" class="nom-music-panel closed" aria-label="NOM music player">
  <div class="nom-music-head"><strong>NOM MUSIC</strong><button type="button" id="nomMusicExpand" aria-label="Close music" onclick="toggleNomMusicPanel()">×</button></div>
- <div id="nomMusicMessage" class="small" style="margin-top:7px">Search songs and artists. Play an Apple preview or listen in Spotify without leaving NOM.</div>
+ <div id="nomMusicMessage" class="small" style="margin-top:7px">Play Spotify inside NOM. Paste a Spotify track, album or playlist link below.</div>
  <div class="nom-music-expanded">
-  <form onsubmit="event.preventDefault();searchNomMusic()"><input id="nomMusicSearch" type="search" maxlength="120" placeholder="Search songs, artists or albums..." aria-label="Search music"><button class="primary" type="submit">Search</button></form>
+  <form onsubmit="event.preventDefault();loadNomSpotifyLink()"><input id="nomSpotifyLink" type="url" maxlength="500" placeholder="Paste Spotify link here..." aria-label="Spotify link"><button class="primary" type="submit">Play Spotify</button></form>
+  <div id="nomSpotifyEmbed"></div>
+  <hr>
+  <div class="small">Or discover Apple Music previews</div>
+  <form onsubmit="event.preventDefault();searchNomMusic()"><input id="nomMusicSearch" type="search" maxlength="120" placeholder="Search songs or artists..." aria-label="Search Apple Music"><button class="primary" type="submit">Search Apple</button></form>
   <div id="nomMusicResults" aria-live="polite"></div>
   <audio id="nomMusicAudio" controls preload="none" playsinline style="width:100%;margin-top:10px;display:none"></audio>
  </div>
- <div id="nomSpotifyEmbed"></div>
 </div>
 <button id="nomMusicToggle" class="nom-music-toggle" type="button" aria-label="Open music" title="Music" onclick="toggleNomMusicPanel()">♫</button>
 <nav class="bottom-nav">
@@ -1694,45 +1697,48 @@ async function loadAppleMusicResults(term){
  }catch(error){if(error.name==="AbortError")throw new Error("Apple music search timed out.");throw error;}
  finally{clearTimeout(timeout);}
 }
-async function loadSpotifyMusicResults(term){
- const endpoint=SUPABASE_URL+"/functions/v1/nom-spotify-search?q="+encodeURIComponent(term);
- const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),18000);
+function parseNomSpotifyLink(value){
+ const raw=String(value||"").trim();if(!raw)return null;
+ let match=raw.match(/^spotify:(track|album|playlist|artist|episode|show):([A-Za-z0-9]+)$/i);
+ if(match)return {type:match[1].toLowerCase(),id:match[2]};
+ try{
+  const url=new URL(raw);
+  if(url.protocol!=="https:"||!/(^|\\.)spotify\\.com$/i.test(url.hostname))return null;
+  const parts=url.pathname.split("/").filter(Boolean),offset=parts[0]==="embed"?1:0;
+  const type=(parts[offset]||"").toLowerCase(),id=parts[offset+1]||"";
+  if(!["track","album","playlist","artist","episode","show"].includes(type)||!/^[A-Za-z0-9]+$/.test(id))return null;
+  return {type,id};
+ }catch(_){return null;}
+}
+function loadNomSpotifyLink(){
+ const input=document.getElementById("nomSpotifyLink"),message=document.getElementById("nomMusicMessage"),embed=document.getElementById("nomSpotifyEmbed"),audio=document.getElementById("nomMusicAudio"),parsed=parseNomSpotifyLink(input.value);
+ if(!parsed){message.textContent="Paste a valid Spotify track, album, playlist, artist or podcast link.";return;}
+ if(audio){audio.pause();audio.removeAttribute("src");audio.load();audio.style.display="none";}
+ embed.innerHTML='<iframe title="Spotify '+parsed.type+' player" src="https://open.spotify.com/embed/'+parsed.type+'/'+parsed.id+'?theme=0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="eager"></iframe>';
+ message.textContent="Spotify "+parsed.type+" player loaded inside NOM. Tap Play in the player.";toggleNomMusicPanel(true);
+}
+async function loadAppleMusicResults(term){
+ const endpoint=SUPABASE_URL+"/functions/v1/nom-music-search?q="+encodeURIComponent(term),controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),18000);
  try{
   const response=await fetch(endpoint,{method:"GET",mode:"cors",cache:"no-store",headers:{Accept:"application/json",apikey:SUPABASE_KEY},signal:controller.signal});
-  let data={};try{data=await response.json();}catch(_){throw new Error("Spotify search returned an unreadable response.");}
-  if(!response.ok)throw new Error(data.error||("Spotify search returned HTTP "+response.status));
-  if(!data||!Array.isArray(data.results))throw new Error("Spotify search returned an unexpected response.");
-  return data.results;
- }catch(error){if(error.name==="AbortError")throw new Error("Spotify search timed out.");throw error;}
- finally{clearTimeout(timeout);}
+  let data={};try{data=await response.json();}catch(_){throw new Error("Apple Music search returned an unreadable response.");}
+  if(!response.ok)throw new Error(data.error||("Apple Music search returned HTTP "+response.status));
+  if(!data||!Array.isArray(data.results))throw new Error("Apple Music search returned an unexpected response.");return data.results;
+ }catch(error){if(error.name==="AbortError")throw new Error("Apple Music search timed out.");throw error;}finally{clearTimeout(timeout);}
 }
 async function searchNomMusic(){
  const input=document.getElementById("nomMusicSearch"),term=(input.value||"").trim(),results=document.getElementById("nomMusicResults"),message=document.getElementById("nomMusicMessage");
- if(term.length<2){message.textContent="Enter at least two characters to search.";return;}
- results.innerHTML='<p class="small">Searching Apple Music and Spotify…</p>';
- message.textContent="Connecting to NOM music…";
- const [appleResult,spotifyResult]=await Promise.allSettled([loadAppleMusicResults(term),loadSpotifyMusicResults(term)]);
- const appleTracks=appleResult.status==="fulfilled"?(appleResult.value||[]).filter(x=>x.trackName&&x.artistName).map(x=>({...x,source:"apple"})):[];
- const spotifyTracks=spotifyResult.status==="fulfilled"?(spotifyResult.value||[]).filter(x=>x.id&&x.name).map(x=>({source:"spotify",spotifyTrackId:x.id,trackName:x.name,artistName:(x.artists||[]).join(", "),collectionName:x.album||"",artworkUrl100:x.image||"",previewUrl:"",isPlayable:x.isPlayable!==false})):[];
- nomMusicResults=[...spotifyTracks,...appleTracks];
- if(!nomMusicResults.length){
-  results.innerHTML='<p class="small">No matching tracks found. Try another song or artist.</p>';
-  const errors=[appleResult,spotifyResult].filter(x=>x.status==="rejected").map(x=>x.reason?.message||"Search unavailable");
-  message.textContent=errors.length?errors.join(" · "):"No matching tracks";
-  return;
- }
- results.innerHTML=nomMusicResults.map((track,i)=>{
-  const image=track.artworkUrl100||"";
-  const imageHTML=image?'<img src="'+escapeHTML(image)+'" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover">':'<div style="width:48px;height:48px;border-radius:8px;background:#303234;display:grid;place-items:center">♫</div>';
-  const action=track.source==="spotify"
-   ?'<button type="button" onclick="playNomSpotifyEmbed('+i+')" style="color:var(--orange);font-size:12px">Play in NOM</button>'
-   :'<button type="button" onclick="playNomMusicPreview('+i+')" '+(track.previewUrl?"":"disabled")+'>'+(track.previewUrl?"▶ Preview":"No preview")+'</button>';
-  const source=track.source==="spotify"?' <span style="color:var(--orange);font-size:10px">SPOTIFY</span>':' <span class="small">APPLE MUSIC</span>';
-  return '<div class="nom-music-result" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #383838">'+imageHTML+'<div style="min-width:0;flex:1"><strong style="display:block;font-size:13px">'+escapeHTML(track.trackName)+'</strong><span class="small">'+escapeHTML(track.artistName)+(track.collectionName?" · "+escapeHTML(track.collectionName):"")+'</span>'+source+'</div>'+action+'</div>';
- }).join("");
- const errors=[appleResult,spotifyResult].filter(x=>x.status==="rejected").map(x=>x.reason?.message||"Search unavailable");
- message.textContent=spotifyTracks.length+" Spotify tracks · "+appleTracks.length+" Apple results"+(errors.length?" · "+errors.join(" · "):"");
+ if(term.length<2){message.textContent="Enter at least two characters to search Apple Music.";return;}
+ results.innerHTML='<p class="small">Searching Apple Music…</p>';message.textContent="Finding Apple Music previews…";
+ try{
+  const data=await loadAppleMusicResults(term),tracks=(data||[]).filter(x=>x.trackName&&x.artistName).map(x=>({...x,source:"apple"}));nomMusicResults=tracks;
+  if(!tracks.length){results.innerHTML='<p class="small">No Apple Music results found. Try another song or artist.</p>';message.textContent="No Apple Music results";return;}
+  results.innerHTML=tracks.map((track,i)=>{
+   const image=track.artworkUrl100||"",imageHTML=image?'<img src="'+escapeHTML(image)+'" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover">':'<div style="width:48px;height:48px;border-radius:8px;background:#303234;display:grid;place-items:center">♫</div>';
+   const action='<button type="button" onclick="playNomMusicPreview('+i+')" '+(track.previewUrl?"":"disabled")+'>'+(track.previewUrl?"▶ Preview":"No preview")+'</button>';
+   return '<div class="nom-music-result" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #383838">'+imageHTML+'<div style="min-width:0;flex:1"><strong style="display:block;font-size:13px">'+escapeHTML(track.trackName)+'</strong><span class="small">'+escapeHTML(track.artistName)+(track.collectionName?" · "+escapeHTML(track.collectionName):"")+'</span> <span class="small">APPLE MUSIC</span></div>'+action+'</div>';
+  }).join("");message.textContent=tracks.length+" Apple Music results";
+ }catch(error){results.innerHTML='<p class="small">Apple Music search is temporarily unavailable.</p>';message.textContent=error.message||"Apple Music search failed.";}
 }
 function playNomMusicPreview(index){
  const track=nomMusicResults[index];if(!track||!track.previewUrl)return;
@@ -1741,16 +1747,6 @@ function playNomMusicPreview(index){
  if(nomMusicAudio&&nomMusicAudio!==audio)nomMusicAudio.pause();
  nomMusicAudio=audio;audio.src=track.previewUrl;audio.style.display="block";
  audio.play().then(()=>{document.getElementById("nomMusicMessage").textContent="♫ Previewing "+track.trackName+" — "+track.artistName;}).catch(()=>{document.getElementById("nomMusicMessage").textContent="Tap play on the audio controls to hear this preview.";});
-}
-function playNomSpotifyEmbed(index){
- const track=nomMusicResults[index];if(!track||!track.spotifyTrackId)return;
- const embed=document.getElementById("nomSpotifyEmbed"),audio=document.getElementById("nomMusicAudio");
- if(audio){audio.pause();audio.removeAttribute("src");audio.load();}
- const trackId=String(track.spotifyTrackId);
- if(!/^[A-Za-z0-9]+$/.test(trackId)){document.getElementById("nomMusicMessage").textContent="This Spotify track could not be opened.";return;}
- embed.innerHTML='<iframe title="Spotify player for '+escapeHTML(track.trackName)+'" src="https://open.spotify.com/embed/track/'+trackId+'?theme=0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="eager"></iframe>';
- document.getElementById("nomMusicMessage").textContent="Spotify player · "+track.trackName+" — "+track.artistName;
- toggleNomMusicPanel(true);
 }
 document.getElementById("homePlaces").innerHTML = '<p class="small">Loading places from NOM...</p>';
 document.getElementById("explorePlaces").innerHTML = '<p class="small">Loading places from NOM...</p>';
