@@ -178,6 +178,24 @@ p{color:var(--muted);line-height:1.5}
   margin:12px 0;
 }
 .feed-card p{margin-bottom:8px}
+
+/* SHARE TO NOM — universal community composer */
+.nom-share-card{background:linear-gradient(145deg,#241c17,#191919 72%);border:1px solid #493020;border-radius:20px;padding:20px;margin:18px 0}
+.nom-share-card h3{font-size:19px;margin:7px 0}
+.nom-share-card p{margin:6px 0 14px}
+.nom-share-composer{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:18px;margin:14px 0}
+.nom-share-composer textarea,.nom-share-composer input,.nom-share-composer select{width:100%;background:#111;color:white;border:1px solid var(--border);border-radius:12px;padding:13px;margin:7px 0 13px}
+.nom-share-composer textarea{min-height:120px;resize:vertical;line-height:1.5}
+.nom-share-composer label{font-size:12px;color:var(--muted)}
+.nom-share-types{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.nom-share-types span{font-size:11px;color:var(--lime);background:#252b1b;border:1px solid #414c2a;border-radius:20px;padding:7px 10px}
+.nom-share-preview{display:flex;gap:9px;overflow-x:auto;margin:8px 0 14px}
+.nom-share-preview img,.nom-share-preview video{width:94px;height:94px;object-fit:cover;border-radius:12px;background:#111}
+.nom-share-preview audio{width:220px;max-width:80vw}
+.nom-share-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}
+.nom-share-actions button{margin:0}
+.nom-share-hint{font-size:11px;color:var(--muted);line-height:1.5}
+
 .form-card{
   background:var(--panel);
   border:1px solid var(--border);
@@ -340,9 +358,31 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 <section id="communityPage" class="hidden">
   <div class="eyebrow">NOM COMMUNITY</div><h1>Stories without borders.</h1>
   <p>Discover places shared by NOM members. Your discoveries can inspire someone's next journey.</p>
-  <div class="feed-card"><div class="eyebrow">SHARE WITH NOM</div><h3>Found somewhere special?</h3>
-    <p>Upload a place and your own photographs. Help the NOM community discover it.</p>
-    <button class="primary" type="button" onclick="showCommunityComposer()">＋ Share a place</button></div>
+  <div class="nom-share-card"><div class="eyebrow">YOUR NOM COMMUNITY</div><h3>What's happening on your journey?</h3>
+    <p>Share a moment, a story, a sound or somewhere worth discovering.</p>
+    <button class="primary" type="button" onclick="showNomShareComposer()">＋ Share to NOM</button>
+    <div class="nom-share-types"><span>TEXT</span><span>PHOTO</span><span>VIDEO</span><span>AUDIO</span><span>PLACES</span></div>
+  </div>
+  <div class="nom-share-composer hidden" id="nomShareComposer">
+    <div class="eyebrow">SHARE TO NOM</div><h2 style="margin-top:7px">Create a post</h2>
+    <label for="nomShareBody">Your story</label>
+    <textarea id="nomShareBody" maxlength="3000" placeholder="Share what's on your mind..."></textarea>
+    <label for="nomShareCategory">Category</label>
+    <select id="nomShareCategory"><option>General</option><option>Travel</option><option>Food</option><option>Music</option><option>Work</option><option>Lifestyle</option></select>
+    <label for="nomSharePlace">Add a place (optional)</label>
+    <input id="nomSharePlace" maxlength="160" placeholder="Place name">
+    <input id="nomShareLocation" maxlength="200" placeholder="City, island or country">
+    <label for="nomShareMedia">Add photos, video or audio</label>
+    <input id="nomShareMedia" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,video/x-m4v,audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg,audio/webm" multiple onchange="previewNomShareMedia()">
+    <div class="nom-share-preview" id="nomSharePreview"></div>
+    <p class="nom-share-hint">Up to 4 files · 50 MB per file. You choose what to share. Posts are published to the NOM community.</p>
+    <div class="nom-share-actions">
+      <button class="primary" id="nomSharePublish" type="button" onclick="publishNomPost()">Publish post</button>
+      <button class="secondary" type="button" onclick="hideNomShareComposer()">Cancel</button>
+    </div>
+    <div class="message" id="nomShareMessage" aria-live="polite"></div>
+    <div class="work-progress hidden" id="nomShareProgress"><span id="nomShareProgressBar"></span></div>
+  </div>
   <div class="form-card community-upload hidden" id="communityComposer">
     <h2>Share a place</h2><p class="small">Upload up to 4 photos and/or videos (JPG, PNG, WebP, MP4, MOV or WebM · max 50 MB per file).</p>
     <label for="communityTitle">Place name</label><input id="communityTitle" maxlength="100" placeholder="e.g. A hidden beach in Bali">
@@ -1081,7 +1121,108 @@ async function importBaliPlaces(){
 }
 
 
-async function showCommunityComposer(){
+async 
+/* UNIVERSAL SHARE TO NOM — writes to the new nom_posts system */
+const NOM_COMMUNITY_BUCKET="nom-community-media";
+const NOM_COMMUNITY_MAX_FILE=50*1024*1024;
+function showNomShareComposer(){
+  if(!currentUser){showPage("profile");showAuth("signup");return;}
+  const composer=document.getElementById("nomShareComposer");
+  composer.classList.remove("hidden");
+  document.getElementById("nomShareMessage").textContent="";
+  composer.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function hideNomShareComposer(){
+  document.getElementById("nomShareComposer").classList.add("hidden");
+}
+function getNomShareFileInfo(file){
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  const mime=(file.type||"").toLowerCase();
+  const types={
+    jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",
+    mp4:"video/mp4",webm:"video/webm",mov:"video/quicktime",m4v:"video/x-m4v",
+    mp3:"audio/mpeg",m4a:"audio/mp4",aac:"audio/aac",wav:"audio/wav",ogg:"audio/ogg"
+  };
+  const allowed=new Set(["image/jpeg","image/png","image/webp","video/mp4","video/webm","video/quicktime","video/x-m4v","audio/mpeg","audio/mp4","audio/aac","audio/wav","audio/ogg","audio/webm"]);
+  const contentType=types[ext]||(allowed.has(mime)?mime:"");
+  const mediaType=contentType.startsWith("image/")?"image":contentType.startsWith("video/")?"video":contentType.startsWith("audio/")?"audio":"";
+  return {contentType,mediaType,supported:allowed.has(contentType)&&!!mediaType};
+}
+function previewNomShareMedia(){
+  const files=Array.from(document.getElementById("nomShareMedia").files||[]);
+  const preview=document.getElementById("nomSharePreview");
+  preview.innerHTML="";
+  files.slice(0,4).forEach(file=>{
+    const info=getNomShareFileInfo(file),url=URL.createObjectURL(file);
+    let node;
+    if(info.mediaType==="image"){node=document.createElement("img");node.alt=file.name;node.src=url;}
+    else if(info.mediaType==="video"){node=document.createElement("video");node.src=url;node.muted=true;node.playsInline=true;}
+    else if(info.mediaType==="audio"){node=document.createElement("audio");node.src=url;node.controls=true;}
+    else{node=document.createElement("div");node.textContent=file.name;}
+    preview.appendChild(node);
+  });
+}
+async function publishNomPost(){
+  const message=document.getElementById("nomShareMessage"),button=document.getElementById("nomSharePublish"),body=document.getElementById("nomShareBody").value.trim(),placeName=document.getElementById("nomSharePlace").value.trim(),placeLocation=document.getElementById("nomShareLocation").value.trim(),category=document.getElementById("nomShareCategory").value,files=Array.from(document.getElementById("nomShareMedia").files||[]);
+  if(!currentUser){message.textContent="Please log in to share with NOM.";return;}
+  if(!body&&!placeName&&!files.length){message.textContent="Add a story, a place or some media before publishing.";return;}
+  if(body.length>3000){message.textContent="Your post is too long. Please keep it under 3,000 characters.";return;}
+  if(files.length>4){message.textContent="Please choose up to 4 files.";return;}
+  const infos=files.map(getNomShareFileInfo);
+  const invalid=files.find((file,index)=>!file.size||file.size>NOM_COMMUNITY_MAX_FILE||!infos[index].supported);
+  if(invalid){message.textContent=invalid.size>NOM_COMMUNITY_MAX_FILE?invalid.name+" exceeds NOM's 50 MB limit.":"Please choose supported JPG, PNG, WebP, MP4, MOV, WebM, MP3, M4A, AAC, WAV or OGG files.";return;}
+  if(!supabaseClient){message.textContent="NOM is temporarily unavailable. Please try again.";return;}
+  const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
+  if(sessionError||!session){message.textContent="Your session has expired. Please log in again.";return;}
+  const progress=document.getElementById("nomShareProgress"),bar=document.getElementById("nomShareProgressBar");
+  const uploaded=[];button.disabled=true;button.textContent="Publishing...";progress.classList.remove("hidden");bar.style.width="0%";message.textContent="Preparing your post...";
+  let createdPostId=null;
+  try{
+    let postType="text";
+    const mediaTypes=new Set(infos.map(info=>info.mediaType));
+    if(mediaTypes.size>1)postType="mixed";
+    else if(mediaTypes.size===1)postType=Array.from(mediaTypes)[0];
+    const insertPayload={user_id:currentUser.id,body:body||null,post_type:postType,place_name:placeName||null,place_location:placeLocation||null,category,status:"published"};
+    const {data:post,error:postError}=await supabaseClient.from("nom_posts").insert(insertPayload).select("id").single();
+    if(postError)throw postError;
+    createdPostId=post.id;
+    const attachments=[];
+    for(let i=0;i<files.length;i++){
+      const file=files[i],info=infos[i],ext=(file.name.split(".").pop()||"file").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin",path=currentUser.id+"/"+crypto.randomUUID()+"."+ext;
+      message.textContent="Uploading "+info.mediaType+" "+(i+1)+" of "+files.length+"...";
+      if(file.size>6*1024*1024){
+        await uploadNomResumable(file,path,session,NOM_COMMUNITY_BUCKET,pct=>{bar.style.width=pct+"%";message.textContent="Uploading media "+(i+1)+" of "+files.length+" · "+pct+"%";},info.contentType);
+      }else{
+        const {error:uploadError}=await supabaseClient.storage.from(NOM_COMMUNITY_BUCKET).upload(path,file,{cacheControl:"3600",upsert:false,contentType:info.contentType});
+        if(uploadError)throw uploadError;
+      }
+      uploaded.push(path);
+      attachments.push({post_id:createdPostId,user_id:currentUser.id,storage_path:path,media_type:info.mediaType,mime_type:info.contentType});
+      bar.style.width=Math.round(((i+1)/Math.max(files.length,1))*100)+"%";
+    }
+    if(attachments.length){
+      const {error:mediaError}=await supabaseClient.from("nom_post_media").insert(attachments);
+      if(mediaError)throw mediaError;
+    }
+    document.getElementById("nomShareBody").value="";
+    document.getElementById("nomSharePlace").value="";
+    document.getElementById("nomShareLocation").value="";
+    document.getElementById("nomShareMedia").value="";
+    document.getElementById("nomSharePreview").innerHTML="";
+    message.textContent="Your post is published. Welcome to the next chapter of NOM.";
+    bar.style.width="100%";
+  }catch(error){
+    console.error("NOM post publishing:",error);
+    if(createdPostId)await supabaseClient.from("nom_posts").delete().eq("id",createdPostId);
+    if(uploaded.length)await supabaseClient.storage.from(NOM_COMMUNITY_BUCKET).remove(uploaded);
+    message.textContent=error?.message||"Your post could not be published. Please try again.";
+    progress.classList.add("hidden");bar.style.width="0%";
+  }finally{
+    button.disabled=false;button.textContent="Publish post";
+  }
+}
+
+function showCommunityComposer(){
   if(!currentUser){showPage("profile");showAuth("signup");return;}
   document.getElementById("communityComposer").classList.remove("hidden");
   document.getElementById("communityMessage").textContent="";
