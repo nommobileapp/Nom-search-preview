@@ -876,10 +876,7 @@ function renderExploreMap(list=currentResults){
  nomGlobeInstance.pointsData(points);
  nomGlobeInstance.ringsData(points);
  nomGlobeInstance.htmlElementsData(points);
- const resultList=document.getElementById("nomGlobeResults");
- const ll=encodeURIComponent(p.lat+","+p.lng);
- return "<div class=\"nom-globe-row\"><button type=\"button\" class=\"nom-globe-place\" onclick=\"focusNomGlobePlace(\'"+escapeHTML(p.id)+"\')\"><span><strong>"+escapeHTML(p.name)+"</strong><small>"+escapeHTML(p.category)+"</small></span></button><div class=\"nom-directions\"><a href=\"https://www.google.com/maps/dir/?api=1&destination="+ll+"\" target=\"_blank\" rel=\"noopener\">Google Maps ↗</a><a class=\"secondary\" href=\"https://waze.com/ul?ll="+ll+"&navigate=yes\" target=\"_blank\" rel=\"noopener\">Waze ↗</a></div></div>";
-}).join("")
+
  if(points.length){
   const focus=points.reduce((center,p)=>({lat:center.lat+p.lat/points.length,lng:center.lng+p.lng/points.length}),{lat:0,lng:0});
   nomGlobeInstance.pointOfView({lat:focus.lat,lng:focus.lng,altitude:1.75},1100);
