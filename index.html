@@ -349,6 +349,14 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
     <label for="communityLocation">Location</label><input id="communityLocation" maxlength="160" placeholder="Town, island or country">
     <label for="communityCategory">Category</label><select id="communityCategory"><option>Nature</option><option>Food</option><option>Beach</option><option>Culture</option><option>Stay</option><option>Experience</option></select>
     <label for="communityDescription">Your story / description</label><textarea id="communityDescription" rows="4" maxlength="1200" placeholder="What makes this place worth discovering?"></textarea>
+    <button class="secondary" type="button" id="communityAiEnhance" onclick="enhanceCommunityDescription()">✨ Enhance with NOM AI</button>
+    <div class="message" id="communityAiMessage" aria-live="polite"></div>
+    <div class="feed-card hidden" id="communityAiPreview" style="margin:8px 0;padding:13px">
+      <div class="eyebrow">NOM AI SUGGESTION</div>
+      <p id="communityAiSuggestion" style="color:#eee;white-space:pre-wrap"></p>
+      <button class="primary" type="button" onclick="acceptCommunityAiSuggestion()">Use suggestion</button>
+      <button class="secondary" type="button" onclick="dismissCommunityAiSuggestion()">Keep my original</button>
+    </div>
     <label for="communityMedia">Photos and videos</label><input id="communityMedia" type="file" accept="image/*,video/*" multiple>
     <button class="primary" id="communitySubmit" type="button" onclick="submitCommunityPlace()">Submit place</button>
     <button class="secondary" type="button" onclick="hideCommunityComposer()">Cancel</button>
@@ -1119,6 +1127,50 @@ function getCommunityMediaInfo(file){
   const isVideo=!!videoTypes[ext]||validVideoMimes.includes(contentType);
   const supported=!!contentType&&(isVideo?validVideoMimes.includes(contentType):validImageMimes.includes(contentType));
   return {isVideo,contentType,supported};
+}
+
+let nomCommunityAiSuggestion = "";
+
+async function enhanceCommunityDescription(){
+  const input=document.getElementById("communityDescription");
+  const button=document.getElementById("communityAiEnhance");
+  const message=document.getElementById("communityAiMessage");
+  const preview=document.getElementById("communityAiPreview");
+  const suggestion=document.getElementById("communityAiSuggestion");
+  const text=(input?.value||"").trim();
+  if(!currentUser){message.textContent="Please log in to use NOM AI.";return;}
+  if(!text){message.textContent="Write your place description first.";return;}
+  if(!supabaseClient){message.textContent="NOM AI is temporarily unavailable.";return;}
+  button.disabled=true;button.textContent="✨ Improving your description...";message.textContent="NOM AI is preparing a suggestion...";
+  preview.classList.add("hidden");nomCommunityAiSuggestion="";
+  try{
+    const {data,error}=await supabaseClient.functions.invoke("nom-ai-enhance",{body:{text,style:"travel-story"}});
+    if(error)throw error;
+    if(!data?.enhancedText||typeof data.enhancedText!=="string")throw new Error(data?.error||"NOM AI did not return a suggestion. Please try again.");
+    nomCommunityAiSuggestion=data.enhancedText.trim();
+    suggestion.textContent=nomCommunityAiSuggestion;
+    preview.classList.remove("hidden");
+    message.textContent="Your suggestion is ready. Review it before using it.";
+  }catch(error){
+    console.error("NOM AI enhancement:",error);
+    message.textContent=error?.message||"NOM AI could not complete this request. Please try again.";
+  }finally{
+    button.disabled=false;button.textContent="✨ Enhance with NOM AI";
+  }
+}
+
+function acceptCommunityAiSuggestion(){
+  if(!nomCommunityAiSuggestion)return;
+  document.getElementById("communityDescription").value=nomCommunityAiSuggestion;
+  document.getElementById("communityAiPreview").classList.add("hidden");
+  document.getElementById("communityAiMessage").textContent="Suggestion added to your description. You can still edit it before publishing.";
+  nomCommunityAiSuggestion="";
+}
+
+function dismissCommunityAiSuggestion(){
+  nomCommunityAiSuggestion="";
+  document.getElementById("communityAiPreview").classList.add("hidden");
+  document.getElementById("communityAiMessage").textContent="Your original description is unchanged.";
 }
 
 async function submitCommunityPlace(){
