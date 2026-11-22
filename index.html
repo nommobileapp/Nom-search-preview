@@ -1115,15 +1115,20 @@ async function submitCommunityPlace(){
   finally{button.disabled=false;button.textContent="Submit place";if(message.textContent.includes("now live")){progressBar.style.width="100%";}else{progress.classList.add("hidden");progressBar.style.width="0%";}}
 }
 
+function getSavedPlaceRecords(){
+ try{
+  const value=JSON.parse(localStorage.getItem("nomSavedPlaces")||"[]");
+  return Array.isArray(value)?value:[];
+ }catch(_){return [];}
+}
 function savePlaceFromDetail(id){
  const key=String(id);
  const item=Object.values(nomDetailItems).find(place=>String(place.id)===key);
  if(!item)return;
- const existing=places.find(place=>String(place.id)===key);
- if(!existing){
-  const record={...item,id:key,image_url:(item.photos||[])[0]||null,image:(item.photos||[])[0]||null,video_urls:item.videos||[]};
-  places.push(record);
- }
+ const record={...item,id:key,image_url:(item.photos||[])[0]||null,image:(item.photos||[])[0]||null,video_urls:item.videos||[]};
+ const index=places.findIndex(place=>String(place.id)===key);
+ if(index>=0)places[index]={...places[index],...record};
+ else places.push(record);
  toggleSave(key);
 }
 function saveNomSearchPlace(id){
@@ -1131,30 +1136,43 @@ function saveNomSearchPlace(id){
  const item=Object.values(nomDetailItems).find(place=>String(place.id)===key);
  if(!item)return;
  const record={...item,id:key,image_url:(item.photos||[])[0]||null,image:(item.photos||[])[0]||null,video_urls:item.videos||[]};
- places=places.filter(place=>String(place.id)!==key);
- places.push(record);
+ const index=places.findIndex(place=>String(place.id)===key);
+ if(index>=0)places[index]={...places[index],...record};
+ else places.push(record);
  currentResults=mergePlaceRecords([...currentResults,record]);
  toggleSave(key);
  renderNOMSearchResults();
 }
 function toggleSave(id){
-  id=String(id);
-  savedIds=savedIds.map(String);
-  if(savedIds.includes(id)){
-    savedIds = savedIds.filter(item=>item !== id);
-  }else{
-    savedIds.push(id);
-  }
-  localStorage.setItem("nomSaved",JSON.stringify(savedIds));
-  renderPlaces();
-  renderSaved();
+ id=String(id);
+ savedIds=savedIds.map(String);
+ let records=getSavedPlaceRecords();
+ if(savedIds.includes(id)){
+  savedIds=savedIds.filter(item=>item!==id);
+  records=records.filter(place=>String(place.id)!==id);
+ }else{
+  const record=places.find(place=>String(place.id)===id)
+    ||currentResults.find(place=>String(place.id)===id)
+    ||Object.values(nomDetailItems).find(place=>String(place.id)===id);
+  if(!record)return;
+  savedIds.push(id);
+  records=records.filter(place=>String(place.id)!==id);
+  records.push({...record,id});
+ }
+ localStorage.setItem("nomSaved",JSON.stringify(savedIds));
+ localStorage.setItem("nomSavedPlaces",JSON.stringify(records));
+ renderPlaces();
+ renderSaved();
 }
-
 function renderSaved(){
-  const list = places.filter(place=>savedIds.includes(String(place.id)));
-  document.getElementById("savedPlaces").innerHTML = list.length
-    ? list.map(placeCard).join("")
-    : '<p>No saved places yet. Explore NOM and save somewhere you love.</p>';
+ const stored=getSavedPlaceRecords();
+ const legacy=places.filter(place=>savedIds.map(String).includes(String(place.id)));
+ const byId=new Map();
+ [...legacy,...stored].forEach(place=>byId.set(String(place.id),place));
+ const list=[...byId.values()].filter(place=>savedIds.map(String).includes(String(place.id)));
+ document.getElementById("savedPlaces").innerHTML=list.length
+  ?list.map(placeCard).join("")
+  :'<p>No saved places yet. Explore NOM and save somewhere you love.</p>';
 }
 
 /* TRIP PLANNER */
