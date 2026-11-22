@@ -1289,6 +1289,7 @@ async function loadNomPostsFeed(){
 
 async function loadCommunityFeed(){
   const feed=document.getElementById("communityFeed"),mine=document.getElementById("myCommunitySubmissions");if(!feed||!mine)return;
+  loadNomPostsFeed();
   const {data:published,error}=await supabaseClient.from("community_posts").select("id,user_id,title,description,location,category,photo_urls,video_urls,username,display_name,status,created_at").eq("status","published").order("created_at",{ascending:false}).limit(40);
   const publishedAvatars=await getNomAvatarMap((published||[]).map(p=>p.user_id));
   (published||[]).forEach(p=>p.avatar_url=publishedAvatars[p.user_id]||"");
