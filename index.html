@@ -380,7 +380,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
     <input id="nomSharePlace" maxlength="160" placeholder="Place name">
     <input id="nomShareLocation" maxlength="200" placeholder="City, island or country">
     <label for="nomShareMedia">Add photos, video or audio</label>
-    <input id="nomShareMedia" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,video/x-m4v,audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg,audio/webm" multiple onchange="previewNomShareMedia()">
+    <input id="nomShareMedia" type="file" accept="image/*,video/*,audio/*" multiple onchange="previewNomShareMedia()">
     <div class="nom-share-preview" id="nomSharePreview"></div>
     <p class="nom-share-hint">Up to 4 files · 50 MB per file. You choose what to share. Posts are published to the NOM community.</p>
     <div class="nom-share-actions">
@@ -1141,7 +1141,7 @@ function selectNomShareType(type){
   const media=document.getElementById("nomShareMedia");
   if(type==="text"){body.focus();return;}
   if(type==="place"){place.focus();return;}
-  const accepts={image:"image/jpeg,image/png,image/webp",video:"video/mp4,video/webm,video/quicktime,video/x-m4v",audio:"audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg,audio/webm"};
+  const accepts={image:"image/*",video:"video/*",audio:"audio/*"};
   media.accept=accepts[type]||"image/*,video/*,audio/*";
   media.click();
 }
@@ -1159,11 +1159,11 @@ function getNomShareFileInfo(file){
   const ext=(file.name.split(".").pop()||"").toLowerCase();
   const mime=(file.type||"").toLowerCase();
   const types={
-    jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",
+    jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",heic:"image/heic",heif:"image/heif",
     mp4:"video/mp4",webm:"video/webm",mov:"video/quicktime",m4v:"video/x-m4v",
     mp3:"audio/mpeg",m4a:"audio/mp4",aac:"audio/aac",wav:"audio/wav",ogg:"audio/ogg"
   };
-  const allowed=new Set(["image/jpeg","image/png","image/webp","video/mp4","video/webm","video/quicktime","video/x-m4v","audio/mpeg","audio/mp4","audio/aac","audio/wav","audio/ogg","audio/webm"]);
+  const allowed=new Set(["image/jpeg","image/png","image/webp","image/heic","image/heif","video/mp4","video/webm","video/quicktime","video/x-m4v","audio/mpeg","audio/mp4","audio/aac","audio/wav","audio/ogg","audio/webm"]);
   const contentType=types[ext]||(allowed.has(mime)?mime:"");
   const mediaType=contentType.startsWith("image/")?"image":contentType.startsWith("video/")?"video":contentType.startsWith("audio/")?"audio":"";
   return {contentType,mediaType,supported:allowed.has(contentType)&&!!mediaType};
@@ -1190,7 +1190,7 @@ async function publishNomPost(){
   if(files.length>4){message.textContent="Please choose up to 4 files.";return;}
   const infos=files.map(getNomShareFileInfo);
   const invalid=files.find((file,index)=>!file.size||file.size>NOM_COMMUNITY_MAX_FILE||!infos[index].supported);
-  if(invalid){message.textContent=invalid.size>NOM_COMMUNITY_MAX_FILE?invalid.name+" exceeds NOM's 50 MB limit.":"Please choose supported JPG, PNG, WebP, MP4, MOV, WebM, MP3, M4A, AAC, WAV or OGG files.";return;}
+  if(invalid){message.textContent=invalid.size>NOM_COMMUNITY_MAX_FILE?invalid.name+" exceeds NOM's 50 MB limit.":"Please choose a supported photo, video or audio file. iPhone HEIC/HEIF photos are supported.";return;}
   if(!supabaseClient){message.textContent="NOM is temporarily unavailable. Please try again.";return;}
   const progress=document.getElementById("nomShareProgress"),bar=document.getElementById("nomShareProgressBar");
   const uploaded=[];button.disabled=true;button.textContent="Publishing...";progress.classList.remove("hidden");bar.style.width="0%";message.textContent="Preparing your post...";
