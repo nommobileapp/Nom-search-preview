@@ -265,7 +265,8 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 #nomExploreMap.hidden{display:none!important}
 .nom-globe-controls{display:flex;justify-content:center;gap:12px;margin:10px 0}
 .nom-globe-controls button{min-width:58px;padding:9px 16px;border:1px solid #444;border-radius:18px;background:#1b1d1f;color:#f5f5f2;font-size:18px;font-weight:700}
-.nom-globe-results{display:grid;gap:8px;margin:14px 0 18px}.nom-globe-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.nom-globe-row .nom-globe-place{flex:1;min-width:150px;width:auto}.nom-globe-row .nom-directions{margin:0}.nom-globe-row .nom-directions a{padding:10px 11px;font-size:11px}
+.nom-globe-results{display:none!important}
+.nom-directions{margin:0}.nom-globe-row .nom-directions a{padding:10px 11px;font-size:11px}
 .nom-globe-place{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:1px solid #303336;border-radius:14px;background:#1b1d1f;color:#f5f5f2;text-align:left}
 .nom-globe-place:before{content:"";flex:0 0 11px;width:11px;height:11px;border-radius:50%;background:#ff7a24;box-shadow:0 0 10px #ff7a2480}
 .nom-globe-place strong{display:block;font-size:13px}
@@ -326,7 +327,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
   <h1>Find your next destination.</h1>
   <input class="search" id="exploreSearch" placeholder="Search places, members, community, work..." oninput="searchNOM(this.value,'explore')"><div class="nom-universal-search hidden" id="exploreUniversalSearch"><div class="nom-search-tabs" id="exploreSearchTabs"></div><div id="exploreSearchResults" aria-live="polite"><div class="nom-search-hint">Search across NOM.</div></div></div>
   <div class="nom-explore-view-toggle" aria-label="Explore view"><button type="button" id="nomExploreListButton" class="active" aria-pressed="true" onclick="setExploreView('list')">☷ List</button><button type="button" id="nomExploreMapButton" aria-pressed="false" onclick="setExploreView('map')">⌖ Map</button></div>
-  <div id="nomExploreMap" class="hidden" role="region" aria-label="Interactive NOM globe"></div><div id="nomGlobeControls" class="nom-globe-controls hidden"><button type="button" aria-label="Zoom in" onclick="zoomNomGlobe(-0.35)">+</button><button type="button" aria-label="Zoom out" onclick="zoomNomGlobe(0.35)">−</button><button type="button" onclick="resetNomGlobeView()">Reset</button></div><p id="nomMapMessage" class="nom-map-message hidden">Search for places to see them on the globe.</p><p class="nom-globe-hint hidden" id="nomGlobeHint">Select a place below or tap a pin · Drag to rotate</p><div id="nomGlobeResults" class="nom-globe-results hidden"></div>
+  <div id="nomExploreMap" class="hidden" role="region" aria-label="Interactive NOM globe"></div><div id="nomGlobeControls" class="nom-globe-controls hidden"><button type="button" aria-label="Zoom in" onclick="zoomNomGlobe(-0.35)">+</button><button type="button" aria-label="Zoom out" onclick="zoomNomGlobe(0.35)">−</button><button type="button" onclick="resetNomGlobeView()">Reset</button></div><p id="nomMapMessage" class="nom-map-message hidden">Search for a place to see it on the globe.</p><p class="nom-globe-hint hidden" id="nomGlobeHint">Tap the orange pin to see place details and driving directions</p>
 
   <div class="categories">
     <button class="category active" onclick="filterPlaces('All',this)">All</button>
@@ -787,7 +788,7 @@ function setExploreView(mode){
  document.getElementById("nomMapMessage")?.classList.toggle("hidden",!mapMode);
  document.getElementById("nomGlobeHint")?.classList.toggle("hidden",!mapMode);
  document.getElementById("nomGlobeControls")?.classList.toggle("hidden",!mapMode);
- document.getElementById("nomGlobeResults")?.classList.toggle("hidden",!mapMode);
+ 
  const searching=document.getElementById("exploreUniversalSearch")&&!document.getElementById("exploreUniversalSearch").classList.contains("hidden");
  const cards=document.getElementById("explorePlaces");if(cards)cards.style.display=(mapMode||searching)?"none":"";
  const categories=document.querySelector("#explorePage .categories");if(categories)categories.style.display=(mapMode||searching)?"none":"";
@@ -803,9 +804,10 @@ function setExploreView(mode){
 function zoomNomGlobe(delta){if(!nomGlobeInstance)return;const pov=nomGlobeInstance.pointOfView();nomGlobeInstance.pointOfView({...pov,altitude:Math.max(0.85,Math.min(4.5,pov.altitude+delta))},350);}
 function resetNomGlobeView(){if(!nomGlobeInstance)return;const pts=nomGlobeInstance.pointsData()||[];if(!pts.length)return;const center=pts.reduce((c,p)=>({lat:c.lat+p.lat/pts.length,lng:c.lng+p.lng/pts.length}),{lat:0,lng:0});nomGlobeInstance.pointOfView({lat:center.lat,lng:center.lng,altitude:1.75},600);}
 function focusNomGlobePlace(id){if(!nomGlobeInstance)return;const p=(nomGlobeInstance.pointsData()||[]).find(x=>x.id===id);if(!p)return;nomGlobeInstance.pointOfView({lat:p.lat,lng:p.lng,altitude:1.15},650);setTimeout(()=>openPlaceDetail(id),450);}
+function selectNOMPlaceOnMap(id){const key=String(id);const place=[...nomSearchData.places,...currentResults].find(p=>String(p.id??p.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"")===key);if(!place)return;nomSelectedMapPlace=place;setExploreView("map");renderExploreMap([place]);const coords=getNomPlaceCoordinates(place);if(coords&&nomGlobeInstance)nomGlobeInstance.pointOfView({lat:coords.lat,lng:coords.lng,altitude:1.15},800);}
 function renderExploreMap(list=currentResults){
  const element=document.getElementById("nomExploreMap");if(!element)return;
- const records=Array.isArray(list)?list:[];
+ const records=nomSelectedMapPlace?[nomSelectedMapPlace]:(Array.isArray(list)?list:[]);
  const points=records.map(place=>({place,coords:getNomPlaceCoordinates(place)})).filter(item=>item.coords).map(({place,coords})=>{
   const id=String(place.id??place.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");
   nomDetailItems[id]={id:place.id??place.source_id,kind:"place",name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],attribution:place.image_attribution,license:place.image_license,lat:coords.lat,lng:coords.lng};
@@ -875,7 +877,6 @@ function renderExploreMap(list=currentResults){
  nomGlobeInstance.ringsData(points);
  nomGlobeInstance.htmlElementsData(points);
  const resultList=document.getElementById("nomGlobeResults");
- if(resultList)resultList.innerHTML=points.map(p=>{
  const ll=encodeURIComponent(p.lat+","+p.lng);
  return "<div class=\"nom-globe-row\"><button type=\"button\" class=\"nom-globe-place\" onclick=\"focusNomGlobePlace(\'"+escapeHTML(p.id)+"\')\"><span><strong>"+escapeHTML(p.name)+"</strong><small>"+escapeHTML(p.category)+"</small></span></button><div class=\"nom-directions\"><a href=\"https://www.google.com/maps/dir/?api=1&destination="+ll+"\" target=\"_blank\" rel=\"noopener\">Google Maps ↗</a><a class=\"secondary\" href=\"https://waze.com/ul?ll="+ll+"&navigate=yes\" target=\"_blank\" rel=\"noopener\">Waze ↗</a></div></div>";
 }).join("")
@@ -1071,7 +1072,7 @@ function renderNOMSearchResults(){
  if(!tab||!target)return;
  tab.innerHTML=nomSearchTabsMarkup();
  const groups=[
-  {key:"places",label:"Places",items:nomSearchData.places,render:p=>{const id=String(p.id??p.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");nomDetailItems[id]={id:p.id,kind:"place",name:p.name,description:p.description,location:p.location,category:p.category,price:p.price,rating:p.rating,photos:[p.image_url||p.image].filter(Boolean),videos:p.video_urls||[],attribution:p.image_attribution,license:p.image_license};return nomSearchResultRow(p.source?"External place · OSM":"NOM place",p.name,(p.location||"")+(p.category?" · "+p.category:""),p.image_url||p.image,'openPlaceDetail(\''+escapeHTML(id)+'\')');}},
+  {key:"places",label:"Places",items:nomSearchData.places,render:p=>{const id=String(p.id??p.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");nomDetailItems[id]={id:p.id,kind:"place",name:p.name,description:p.description,location:p.location,category:p.category,price:p.price,rating:p.rating,photos:[p.image_url||p.image].filter(Boolean),videos:p.video_urls||[],attribution:p.image_attribution,license:p.image_license};return nomSearchResultRow(p.source?"External place · OSM":"NOM place",p.name,(p.location||"")+(p.category?" · "+p.category:""),p.image_url||p.image,'selectNOMPlaceOnMap(\''+escapeHTML(id)+'\')');}},
   {key:"members",label:"Members",items:nomSearchData.members,render:p=>nomSearchResultRow("NOM member",p.display_name||p.username||"NOM member","@"+(p.username||"member")+(p.headline?" · "+p.headline:"")+(p.location?" · "+p.location:""),p.avatar_url,p.has_work_profile?'openMemberPortfolio(\''+escapeHTML(p.id)+'\')':'showPage(\'work\')')},
   {key:"community",label:"Community",items:nomSearchData.community,render:p=>nomSearchResultRow("Community",p.title,(p.location||"")+(p.category?" · "+p.category:""),(p.photo_urls||[])[0]||"",'showPage(\'community\')')},
   {key:"work",label:"Work",items:nomSearchData.work,render:p=>nomSearchResultRow((p.listing_type||"opportunity").replace(/_/g," "),p.title,(p.location||"Remote")+(p.work_mode?" · "+p.work_mode:"")+(p.compensation?" · "+p.compensation:""),"",'showPage(\'work\')')}
