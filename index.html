@@ -1681,66 +1681,39 @@ async function initialiseApp(){
 
 let nomMusicResults=[],nomMusicAudio=null;
 function toggleNomMusicPanel(force){const panel=document.getElementById("nomMusicPanel"),button=document.getElementById("nomMusicToggle");const open=typeof force==="boolean"?force:panel.classList.contains("closed");panel.classList.toggle("closed",!open);button.classList.toggle("active",open);button.setAttribute("aria-label",open?"Close music":"Open music");}
-function asyncNomMusicSearchUrl(term){return "https://itunes.apple.com/search?term="+encodeURIComponent(term)+"&media=music&entity=song&limit=24&country=ID";}
-let nomMusicJsonpCounter=0;
-function loadAppleMusicJsonp(url){
- return new Promise((resolve,reject)=>{
-  const callbackName="nomAppleMusicCallback"+(++nomMusicJsonpCounter);
-  const script=document.createElement("script");
-  let finished=false;
-  const cleanup=()=>{
-   if(finished)return;
-   finished=true;
-   clearTimeout(timer);
-   script.onload=null;
-   script.onerror=null;
-   script.remove();
-   try{delete window[callbackName];}catch(_){window[callbackName]=undefined;}
-  };
-  const timer=setTimeout(()=>{
-   cleanup();
-   reject(new Error("Apple Music search timed out. Please try again."));
-  },15000);
-  window[callbackName]=(data)=>{
-   cleanup();
-   resolve(data||{});
-  };
-  script.onerror=()=>{
-   cleanup();
-   reject(new Error("Apple Music could not load its search response."));
-  };
-  script.src=url+"&callback="+callbackName;
-  document.head.appendChild(script);
- });
-}
 async function loadAppleMusicResults(term){
- const url=asyncNomMusicSearchUrl(term);
+ const endpoint=SUPABASE_URL+"/functions/v1/nom-music-search?q="+encodeURIComponent(term);
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),18000);
  try{
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),9000);
-  try{
-   const response=await fetch(url,{method:"GET",mode:"cors",cache:"no-store",headers:{Accept:"application/json"},signal:controller.signal});
-   if(!response.ok)throw new Error("Apple catalogue returned HTTP "+response.status);
-   const data=await response.json();
-   if(!data||!Array.isArray(data.results))throw new Error("Apple returned an unexpected search response.");
-   return data;
-  }finally{clearTimeout(timeout);}
- }catch(fetchError){
-  console.warn("NOM Apple search fetch failed; trying JSONP fallback:",fetchError.message);
-  return await loadAppleMusicJsonp(url);
- }
+  const response=await fetch(endpoint,{
+   method:"GET",
+   mode:"cors",
+   cache:"no-store",
+   headers:{Accept:"application/json",apikey:SUPABASE_KEY},
+   signal:controller.signal
+  });
+  let data={};
+  try{data=await response.json();}catch(_){throw new Error("NOM music search returned an unreadable response.");}
+  if(!response.ok)throw new Error(data.error||("NOM music search returned HTTP "+response.status));
+  if(!data||!Array.isArray(data.results))throw new Error("NOM music search returned an unexpected response.");
+  return data;
+ }catch(error){
+  if(error.name==="AbortError")throw new Error("NOM music search timed out. Please try again.");
+  throw error;
+ }finally{clearTimeout(timeout);}
 }
 async function searchNomMusic(){
  const input=document.getElementById("nomMusicSearch"),term=(input.value||"").trim(),results=document.getElementById("nomMusicResults"),message=document.getElementById("nomMusicMessage");
  if(term.length<2){message.textContent="Enter at least two characters to search.";return;}
  results.innerHTML='<p class="small">Searching music…</p>';
- message.textContent="Connecting to Apple’s music catalogue…";
+ message.textContent="Connecting to NOM music search…";
  try{
   const data=await loadAppleMusicResults(term);
   nomMusicResults=(data.results||[]).filter(x=>x.trackName&&x.artistName);
   if(!nomMusicResults.length){results.innerHTML='<p class="small">No matching tracks found. Try another song or artist.</p>';message.textContent="No matching tracks";return;}
   results.innerHTML=nomMusicResults.map((track,i)=>'<div class="nom-music-result" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #383838"><img src="'+escapeHTML(track.artworkUrl100||"")+'" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover"><div style="min-width:0;flex:1"><strong style="display:block;font-size:13px">'+escapeHTML(track.trackName)+'</strong><span class="small">'+escapeHTML(track.artistName)+(track.collectionName?" · "+escapeHTML(track.collectionName):"")+'</span></div><button type="button" onclick="playNomMusicPreview('+i+')" '+(track.previewUrl?"":"disabled")+'>'+ (track.previewUrl?"▶ Preview":"No preview")+'</button><button type="button" onclick="playNomSpotifyEmbed('+i+')" style="color:var(--orange);font-size:12px">Spotify</button></div>').join("");
-  message.textContent=nomMusicResults.length+" tracks found · Apple/iTunes previews play inside NOM.";
+  message.textContent=nomMusicResults.length+" tracks found · Previews play inside NOM.";
  }catch(error){results.innerHTML='<p class="small">Search could not connect. Please try again in a moment.</p>';message.textContent="Apple search error: "+(error.message||"connection failed");}
 }
 function playNomMusicPreview(index){const track=nomMusicResults[index];if(!track||!track.previewUrl)return;const audio=document.getElementById("nomMusicAudio"),spotify=document.getElementById("nomSpotifyEmbed");if(spotify)spotify.innerHTML="";if(nomMusicAudio&&nomMusicAudio!==audio)nomMusicAudio.pause();nomMusicAudio=audio;audio.src=track.previewUrl;audio.style.display="block";audio.play().then(()=>{document.getElementById("nomMusicMessage").textContent="♫ Previewing "+track.trackName+" — "+track.artistName;}).catch(()=>{document.getElementById("nomMusicMessage").textContent="Tap play on the audio controls to hear this preview.";});}
