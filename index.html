@@ -1703,7 +1703,7 @@ function parseNomSpotifyLink(value){
  if(match)return {type:match[1].toLowerCase(),id:match[2]};
  try{
   const url=new URL(raw);
-  if(url.protocol!=="https:"||!/(^|\\.)spotify\\.com$/i.test(url.hostname))return null;
+  if(url.protocol!=="https:"||!/(^|\.)spotify\.com$/i.test(url.hostname))return null;
   const parts=url.pathname.split("/").filter(Boolean),offset=parts[0]==="embed"?1:0;
   const type=(parts[offset]||"").toLowerCase(),id=parts[offset+1]||"";
   if(!["track","album","playlist","artist","episode","show"].includes(type)||!/^[A-Za-z0-9]+$/.test(id))return null;
