@@ -254,17 +254,27 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 .nom-search-empty,.nom-search-hint{font-size:12px;color:var(--muted);padding:12px 2px}
 .nom-search-loading{color:var(--lime);font-size:12px;padding:14px 2px}
 
-/* NOM MUSIC — persistent Spotify embed dock */
+/* NOM MUSIC — persistent in-app audio dock */
 .nom-music-toggle{position:fixed;right:14px;bottom:88px;z-index:70;border:1px solid #454545;border-radius:999px;background:#1b1d1f;color:var(--white);padding:10px 16px;font-weight:700;box-shadow:0 4px 18px #0008}
 .nom-music-toggle.active{border-color:var(--orange);color:var(--orange)}
-.nom-music-panel{position:fixed;left:12px;right:12px;bottom:142px;z-index:69;background:#1b1d1f;border:1px solid #383838;border-radius:18px;padding:14px;box-shadow:0 8px 30px #000b;max-width:520px;margin:auto}
-.nom-music-panel.hidden{display:none}
-.nom-music-panel input{width:100%;box-sizing:border-box;background:#101112;color:#f5f5f2;border:1px solid #454545;border-radius:10px;padding:11px;margin:8px 0}
-.nom-music-panel button{border:1px solid #555;border-radius:999px;padding:9px 13px;background:#282a2c;color:#f5f5f2}
-.nom-music-panel button.primary{background:var(--orange);color:#111;border:0}
-#nomSpotifyEmbed{min-height:0;margin-top:10px;overflow:hidden;border-radius:12px}
-#nomSpotifyEmbed iframe{max-width:100%;border:0;border-radius:12px}
-@media(min-width:700px){.nom-music-panel{left:auto;right:20px;width:390px}}
+.nom-music-panel{position:fixed;left:10px;right:10px;bottom:82px;z-index:69;background:#1b1d1f;border:1px solid #383838;border-radius:17px;padding:12px;box-shadow:0 8px 30px #000b;max-width:540px;margin:auto}
+.nom-music-panel.minimized{padding:9px 12px}
+.nom-music-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.nom-music-head button,.nom-music-panel button{border:1px solid #555;border-radius:999px;padding:8px 12px;background:#282a2c;color:#f5f5f2}
+.nom-music-panel button.primary{background:var(--orange);color:#111;border:0;font-weight:700}
+.nom-music-tabs{display:flex;gap:8px;margin:10px 0}
+.nom-music-tabs button.active{border-color:var(--orange);color:var(--orange)}
+.nom-music-panel input{width:100%;box-sizing:border-box;background:#101112;color:#f5f5f2;border:1px solid #454545;border-radius:10px;padding:11px;margin:7px 0}
+.nom-music-frame-wrap{height:166px;overflow:hidden;border-radius:10px;margin-top:9px;background:#101112}
+.nom-music-frame-wrap iframe{width:100%;height:166px;border:0;border-radius:10px}
+.nom-music-panel.minimized .nom-music-expanded{display:none}
+.nom-music-panel.minimized .nom-music-frame-wrap,.nom-music-panel.minimized #nomMusicSpotifyWrap{height:1px;position:absolute;left:-10000px;width:1px;overflow:hidden}
+.nom-music-status{font-size:11px;color:var(--muted);margin:7px 2px 0;min-height:16px}
+.nom-music-controls{display:flex;gap:7px;align-items:center;margin-top:8px}
+.nom-music-controls button{padding:6px 10px}
+#nomMusicSpotifyWrap{height:152px;overflow:hidden;border-radius:10px;margin-top:9px}
+#nomMusicSpotifyFrame{width:100%;height:152px;border:0;border-radius:10px}
+@media(min-width:700px){.nom-music-panel{left:auto;right:20px;width:400px}}
 </style>
 </head>
 
@@ -443,16 +453,25 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 
 </main><div id="placeDetailOverlay" class="detail-overlay" role="dialog" aria-modal="true" aria-hidden="true" onclick="if(event.target===this)closePlaceDetail()"><div class="detail-topbar"><button class="detail-back" type="button" onclick="closePlaceDetail()" aria-label="Back to places">← <span>Back</span></button><span class="eyebrow">NOM DISCOVERY</span><button class="detail-close" type="button" onclick="closePlaceDetail()" aria-label="Close">×</button></div><div class="detail-body" id="placeDetailBody"></div></div><div id="workMediaLightbox" class="work-lightbox hidden" role="dialog" aria-modal="true" aria-label="Full-size portfolio media" onclick="if(event.target===this)closeWorkMediaViewer()"><button class="work-lightbox-close" type="button" onclick="closeWorkMediaViewer()" aria-label="Close">×</button><div id="workMediaLightboxContent"></div></div><section id="nomChatOverlay" class="nom-chat-overlay hidden" role="dialog" aria-modal="true" aria-label="NOM private chat"><div class="nom-chat-top"><div class="nom-chat-identity"><span id="nomChatAvatar"></span><div><strong id="nomChatTitle">NOM messages</strong><div class="small" id="nomChatSubtitle">Private member conversation</div></div></div><button class="text-button" type="button" onclick="closeNomChat()">Close</button></div><div class="nom-chat-messages" id="nomChatMessages"></div><form class="nom-chat-compose" onsubmit="event.preventDefault();sendNomMessage()"><textarea id="nomChatInput" maxlength="4000" placeholder="Write a message..." required></textarea><button class="primary" id="nomChatSend" type="submit">Send</button></form></section>
 
-<div id="nomMusicPanel" class="nom-music-panel hidden" aria-label="NOM music player">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><strong>♫ NOM MUSIC</strong><button type="button" onclick="toggleNomMusicPanel(false)" aria-label="Close music panel">Close</button></div>
-  <p class="small">Discover music while you explore. Play free previews or open the track in Spotify.</p>
-  <form onsubmit="event.preventDefault();searchNomMusic()"><input id="nomMusicSearch" type="search" maxlength="120" placeholder="Search songs, artists or albums..." aria-label="Search music"><button class="primary" type="submit">Search</button></form>
-  <div id="nomMusicResults" aria-live="polite"></div>
-  <audio id="nomMusicAudio" controls preload="none" style="width:100%;margin-top:10px;display:none"></audio>
-  <p class="small" id="nomMusicMessage">Search the free music catalogue. Preview availability depends on the track.</p>
+<div id="nomMusicPanel" class="nom-music-panel minimized" aria-label="NOM music player">
+  <div class="nom-music-head"><strong>♫ NOM MUSIC <span style="color:var(--lime);font-size:10px">· IN-APP PLAYER</span></strong><button type="button" id="nomMusicExpand" onclick="toggleNomMusicPanel()" aria-expanded="false">Expand</button></div>
+  <div id="nomMusicNowPlaying" class="nom-music-status">Choose SoundCloud or Spotify to play music while you explore NOM.</div>
+  <div class="nom-music-expanded">
+    <div class="nom-music-tabs"><button type="button" id="nomMusicSoundCloudTab" class="active" onclick="setNomMusicMode('soundcloud')">SoundCloud</button><button type="button" id="nomMusicSpotifyTab" onclick="setNomMusicMode('spotify')">Spotify</button></div>
+    <section id="nomMusicSoundCloudSection">
+      <form onsubmit="event.preventDefault();loadNomSoundCloud()"><input id="nomSoundCloudUrl" type="url" inputmode="url" placeholder="Paste a SoundCloud track or playlist link" aria-label="SoundCloud track or playlist URL" required><button class="primary" type="submit">Play in NOM</button></form>
+      <div id="nomMusicSoundCloudWrap" class="nom-music-frame-wrap"><iframe id="nomSoundCloudFrame" title="SoundCloud music player" scrolling="no" allow="autoplay"></iframe></div>
+      <div class="nom-music-controls"><button type="button" onclick="nomSoundCloudControl('prev')" aria-label="Previous track">⏮</button><button type="button" onclick="nomSoundCloudControl('toggle')" aria-label="Play or pause">▶ / Ⅱ</button><button type="button" onclick="nomSoundCloudControl('next')" aria-label="Next track">⏭</button><span class="small">Playlist controls</span></div>
+    </section>
+    <section id="nomMusicSpotifySection" class="hidden">
+      <form onsubmit="event.preventDefault();loadNomSpotifyEmbed()"><input id="nomSpotifyUrl" type="url" inputmode="url" placeholder="Paste a Spotify track, album or playlist link" aria-label="Spotify track, album or playlist URL" required><button class="primary" type="submit">Play inside NOM</button></form>
+      <div id="nomMusicSpotifyWrap"><iframe id="nomMusicSpotifyFrame" title="Spotify player" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>
+      <p class="small">Spotify playback and previews depend on Spotify's account and track availability.</p>
+    </section>
+  </div>
 </div>
-
-<button id="nomMusicToggle" class="nom-music-toggle" type="button" onclick="toggleNomMusicPanel()">♫ Music</button>
+<button id="nomMusicToggle" class="nom-music-toggle active" type="button" onclick="toggleNomMusicPanel()">♫ Music</button>
+<script src="https://w.soundcloud.com/player/api.js"></script>
 <nav class="bottom-nav">
   <button class="nav-item active" data-page="home" onclick="showPage('home')"><span>⌂</span>Home</button>
   <button class="nav-item" data-page="explore" onclick="showPage('explore')"><span>⌕</span>Explore</button>
@@ -1670,13 +1689,13 @@ async function initialiseApp(){
 }
 
 
-/* NOM MUSIC — Spot/* NOM MUSIC — free searchable catalogue with 30-second previews */
-let nomMusicResults=[],nomMusicAudio=null;
-function toggleNomMusicPanel(force){const panel=document.getElementById("nomMusicPanel"),button=document.getElementById("nomMusicToggle");const open=typeof force==="boolean"?force:panel.classList.contains("hidden");panel.classList.toggle("hidden",!open);button.classList.toggle("active",open);button.textContent=open?"♫ Music on":"♫ Music";if(open)document.getElementById("nomMusicSearch").focus();}
-function asyncNomMusicSearchUrl(term){return "https://itunes.apple.com/search?term="+encodeURIComponent(term)+"&media=music&entity=song&limit=24&country=ID";}
-async function loadNomMusicSearch(term){const response=await fetch(SUPABASE_URL+"/functions/v1/nom-music-search?q="+encodeURIComponent(term),{method:"GET",headers:{apikey:SUPABASE_KEY,Accept:"application/json"}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Music catalogue request failed (HTTP "+response.status+").");return data;}
-async function searchNomMusic(){const input=document.getElementById("nomMusicSearch"),term=(input.value||"").trim(),results=document.getElementById("nomMusicResults"),message=document.getElementById("nomMusicMessage");if(term.length<2){message.textContent="Enter at least two characters to search.";return;}results.innerHTML='<p class="small">Searching music…</p>';message.textContent="Searching the free music catalogue…";try{const data=await loadNomMusicSearch(term);nomMusicResults=(data.results||[]).filter(x=>x.trackName&&x.artistName);if(!nomMusicResults.length){results.innerHTML='<p class="small">No matching tracks found. Try another search.</p>';message.textContent="No results";return;}results.innerHTML=nomMusicResults.map((track,i)=>'<div class="nom-music-result" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #383838"><img src="'+escapeHTML(track.artworkUrl100||"")+'" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover"><div style="min-width:0;flex:1"><strong style="display:block;font-size:13px">'+escapeHTML(track.trackName)+'</strong><span class="small">'+escapeHTML(track.artistName)+(track.collectionName?" · "+escapeHTML(track.collectionName):"")+'</span></div><button type="button" onclick="playNomMusicPreview('+i+')" '+(track.previewUrl?"":"disabled")+'>'+ (track.previewUrl?"▶ Preview":"No preview")+'</button><a href="https://open.spotify.com/search/'+encodeURIComponent(track.artistName+" "+track.trackName)+'" target="_blank" rel="noopener" aria-label="Find on Spotify" style="color:var(--orange);font-size:12px">Spotify</a></div>').join("");message.textContent=nomMusicResults.length+" tracks found · previews provided by Apple/iTunes.";}catch(error){results.innerHTML="";message.textContent=error.message||"Music search failed. Please try again.";}}
-function playNomMusicPreview(index){const track=nomMusicResults[index];if(!track||!track.previewUrl)return;const audio=document.getElementById("nomMusicAudio");if(nomMusicAudio)nomMusicAudio.pause();nomMusicAudio=audio;audio.src=track.previewUrl;audio.style.display="block";audio.play().then(()=>{document.getElementById("nomMusicMessage").textContent="Playing a preview: "+track.trackName+" — "+track.artistName;}).catch(()=>{document.getElementById("nomMusicMessage").textContent="Tap play on the audio player to listen to this preview.";});}
+/* NOM MUSIC — persistent SoundCloud + optional Spotify embeds */
+let nomSoundCloudWidget=null,nomMusicMode="soundcloud";
+function toggleNomMusicPanel(force){const panel=document.getElementById("nomMusicPanel"),expand=document.getElementById("nomMusicExpand"),button=document.getElementById("nomMusicToggle");const minimized=typeof force==="boolean"?!force:!panel.classList.contains("minimized");panel.classList.toggle("minimized",minimized);expand.textContent=minimized?"Expand":"Minimize";expand.setAttribute("aria-expanded",String(!minimized));button.classList.toggle("active",!minimized);button.textContent=minimized?"♫ Music":"♫ Music on";}
+function setNomMusicMode(mode){nomMusicMode=mode;document.getElementById("nomMusicSoundCloudSection").classList.toggle("hidden",mode!=="soundcloud");document.getElementById("nomMusicSpotifySection").classList.toggle("hidden",mode!=="spotify");document.getElementById("nomMusicSoundCloudTab").classList.toggle("active",mode==="soundcloud");document.getElementById("nomMusicSpotifyTab").classList.toggle("active",mode==="spotify");document.getElementById("nomMusicNowPlaying").textContent=mode==="soundcloud"?"SoundCloud player · Load a public track or playlist.":"Spotify player · Paste a Spotify track, album or playlist link.";}
+function loadNomSoundCloud(){const raw=(document.getElementById("nomSoundCloudUrl").value||"").trim();let parsed;try{parsed=new URL(raw);}catch(_e){document.getElementById("nomMusicNowPlaying").textContent="Enter a valid SoundCloud link.";return;}if(parsed.hostname!=="soundcloud.com"&&!parsed.hostname.endsWith(".soundcloud.com")){document.getElementById("nomMusicNowPlaying").textContent="Please use a soundcloud.com track or playlist link.";return;}const frame=document.getElementById("nomSoundCloudFrame");if(nomSoundCloudWidget){try{nomSoundCloudWidget.pause();}catch(_e){}nomSoundCloudWidget=null;}const playerUrl="https://w.soundcloud.com/player/?url="+encodeURIComponent(parsed.href)+"&color=%23FF6B35&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=false";frame.onload=()=>{if(!window.SC||!window.SC.Widget){document.getElementById("nomMusicNowPlaying").textContent="SoundCloud loaded. Use its play button to start.";return;}try{nomSoundCloudWidget=window.SC.Widget(frame);nomSoundCloudWidget.bind(window.SC.Widget.Events.READY,()=>{document.getElementById("nomMusicNowPlaying").textContent="SoundCloud ready · Music stays while you browse NOM.";nomSoundCloudWidget.getCurrentSound(sound=>{if(sound&&sound.title)document.getElementById("nomMusicNowPlaying").textContent="♫ "+sound.title+" · SoundCloud";});});nomSoundCloudWidget.bind(window.SC.Widget.Events.PLAY,()=>{document.getElementById("nomMusicNowPlaying").textContent="♫ Playing on SoundCloud · Browse NOM freely";});nomSoundCloudWidget.bind(window.SC.Widget.Events.ERROR,()=>{document.getElementById("nomMusicNowPlaying").textContent="This track may not allow embedding or playback.";});}catch(_e){document.getElementById("nomMusicNowPlaying").textContent="Use the embedded SoundCloud player controls.";}};frame.src=playerUrl;document.getElementById("nomMusicNowPlaying").textContent="Loading SoundCloud…";toggleNomMusicPanel(false);}
+function nomSoundCloudControl(action){if(!nomSoundCloudWidget){document.getElementById("nomMusicNowPlaying").textContent="Load a SoundCloud track or playlist first.";return;}try{if(action==="toggle")nomSoundCloudWidget.toggle();else if(action==="next")nomSoundCloudWidget.next();else if(action==="prev")nomSoundCloudWidget.prev();}catch(_e){document.getElementById("nomMusicNowPlaying").textContent="That control is not available for this track.";}}
+function loadNomSpotifyEmbed(){const raw=(document.getElementById("nomSpotifyUrl").value||"").trim();let parsed;try{parsed=new URL(raw);}catch(_e){document.getElementById("nomMusicNowPlaying").textContent="Enter a valid Spotify link.";return;}if(parsed.hostname!=="open.spotify.com"&&!parsed.hostname.endsWith(".spotify.com")){document.getElementById("nomMusicNowPlaying").textContent="Please use an open.spotify.com link.";return;}const parts=parsed.pathname.split("/").filter(Boolean),typeIndex=parts.findIndex(part=>["track","album","playlist","episode","show"].includes(part));if(typeIndex<0||!parts[typeIndex+1]){document.getElementById("nomMusicNowPlaying").textContent="Use a Spotify track, album or playlist link.";return;}const type=parts[typeIndex],id=parts[typeIndex+1].split("?")[0];document.getElementById("nomMusicSpotifyFrame").src="https://open.spotify.com/embed/"+type+"/"+encodeURIComponent(id)+"?utm_source=generator&theme=0";document.getElementById("nomMusicNowPlaying").textContent="Spotify embedded in NOM · Playback depends on Spotify account and track availability.";toggleNomMusicPanel(false);}
 document.getElementById("homePlaces").innerHTML = '<p class="small">Loading places from NOM...</p>';
 document.getElementById("explorePlaces").innerHTML = '<p class="small">Loading places from NOM...</p>';
 searchPlaces("");
