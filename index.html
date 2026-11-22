@@ -7,7 +7,9 @@
 <meta name="theme-color" content="#101010">
 <title>NOM — Journey Beyond</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
 
 <style>
@@ -253,6 +255,19 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 .nom-search-kind{color:var(--orange);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
 .nom-search-empty,.nom-search-hint{font-size:12px;color:var(--muted);padding:12px 2px}
 .nom-search-loading{color:var(--lime);font-size:12px;padding:14px 2px}
+/* NOM Explore map — lightweight Leaflet prototype */
+.nom-explore-view-toggle{display:flex;gap:8px;margin:12px 0 14px}
+.nom-explore-view-toggle button{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:24px;background:var(--panel);color:var(--white);font-weight:700}
+.nom-explore-view-toggle button.active{background:var(--lime);border-color:var(--lime);color:#111}
+#nomExploreMap{height:min(66vh,560px);min-height:340px;border:1px solid var(--border);border-radius:18px;overflow:hidden;background:#202522;position:relative;z-index:1}
+#nomExploreMap.hidden{display:none!important}
+.nom-map-message{font-size:12px;color:var(--muted);margin:8px 2px 12px}
+.nom-map-marker{width:20px;height:20px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--orange);border:2px solid #fff;box-shadow:0 2px 8px #0009}
+.nom-map-marker:after{content:"";display:block;width:6px;height:6px;border-radius:50%;background:#111;position:absolute;top:5px;left:5px}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#1b1b1b;color:#f5f5f5}
+.leaflet-popup-content{font-family:Arial,Helvetica,sans-serif;font-size:12px}
+.leaflet-control-attribution{font-size:9px!important}
+
 </style>
 </head>
 
@@ -299,6 +314,9 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
   <div class="eyebrow">EXPLORE</div>
   <h1>Find your next destination.</h1>
   <input class="search" id="exploreSearch" placeholder="Search places, members, community, work..." oninput="searchNOM(this.value,'explore')"><div class="nom-universal-search hidden" id="exploreUniversalSearch"><div class="nom-search-tabs" id="exploreSearchTabs"></div><div id="exploreSearchResults" aria-live="polite"><div class="nom-search-hint">Search across NOM.</div></div></div>
+  <div class="nom-explore-view-toggle" aria-label="Explore view"><button type="button" id="nomExploreListButton" class="active" aria-pressed="true" onclick="setExploreView('list')">☷ List</button><button type="button" id="nomExploreMapButton" aria-pressed="false" onclick="setExploreView('map')">⌖ Map</button></div>
+  <div id="nomExploreMap" class="hidden" role="region" aria-label="Map of NOM places"></div><p id="nomMapMessage" class="nom-map-message hidden">Search for places to see them on the map.</p>
+
   <div class="categories">
     <button class="category active" onclick="filterPlaces('All',this)">All</button>
     <button class="category" onclick="filterPlaces('Nature',this)">Nature</button>
@@ -743,6 +761,52 @@ function hasPlaceImage(place){
   return (typeof image === "string" && (image.trim().startsWith("https://") || image.trim().startsWith("http://"))) || (Array.isArray(place.video_urls) && place.video_urls.some(url=>typeof url==="string" && (url.startsWith("https://") || url.startsWith("http://"))));
 }
 
+
+let nomExploreMapInstance=null,nomExploreMapMarkers=null,exploreDisplayMode="list";
+function getNomPlaceCoordinates(place){
+ const lat=Number(place?.lat??place?.latitude??place?.geometry?.coordinates?.[1]);
+ const lng=Number(place?.lon??place?.lng??place?.longitude??place?.geometry?.coordinates?.[0]);
+ return Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180?{lat,lng}:null;
+}
+function setExploreView(mode){
+ exploreDisplayMode=mode==="map"?"map":"list";
+ const mapMode=exploreDisplayMode==="map";
+ document.getElementById("nomExploreMap")?.classList.toggle("hidden",!mapMode);
+ document.getElementById("nomMapMessage")?.classList.toggle("hidden",!mapMode);
+ const cards=document.getElementById("explorePlaces");if(cards)cards.style.display=mapMode?"none":"";
+ const listButton=document.getElementById("nomExploreListButton"),mapButton=document.getElementById("nomExploreMapButton");
+ if(listButton){listButton.classList.toggle("active",!mapMode);listButton.setAttribute("aria-pressed",String(!mapMode));}
+ if(mapButton){mapButton.classList.toggle("active",mapMode);mapButton.setAttribute("aria-pressed",String(mapMode));}
+ if(mapMode){
+  const universal=document.getElementById("exploreUniversalSearch");
+  renderExploreMap(universal&&!universal.classList.contains("hidden")?nomSearchData.places:currentResults);
+ }
+}
+function renderExploreMap(list=currentResults){
+ const element=document.getElementById("nomExploreMap");if(!element)return;
+ const records=Array.isArray(list)?list:[];
+ const points=records.map(place=>({place,coords:getNomPlaceCoordinates(place)})).filter(item=>item.coords);
+ const message=document.getElementById("nomMapMessage");
+ if(message)message.textContent=points.length?points.length+" place"+(points.length===1?"":"s")+" on the map. Tap a pin to open its NOM details.":(records.length?"These results do not include map coordinates yet. Try another place search.":"Search for places to see them on the map.");
+ if(!window.L)return;
+ if(!nomExploreMapInstance){
+  nomExploreMapInstance=L.map(element,{zoomControl:true,scrollWheelZoom:false}).setView([-8.4095,115.1889],9);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© <a href='https://www.openstreetmap.org/copyright' target='_blank' rel='noopener'>OpenStreetMap</a> contributors"}).addTo(nomExploreMapInstance);
+  nomExploreMapMarkers=L.layerGroup().addTo(nomExploreMapInstance);
+ }
+ nomExploreMapMarkers.clearLayers();
+ points.forEach(({place,coords})=>{
+  const id=String(place.id??place.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");
+  nomDetailItems[id]={id:place.id??place.source_id,kind:"place",name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],attribution:place.image_attribution,license:place.image_license};
+  const marker=L.marker([coords.lat,coords.lng],{title:place.name||"NOM place",icon:L.divIcon({className:"",html:"<div class='nom-map-marker'></div>",iconSize:[20,24],iconAnchor:[10,22]})});
+  marker.bindTooltip(escapeHTML(place.name||"NOM place"),{direction:"top"});
+  marker.on("click",()=>openPlaceDetail(id));
+  marker.addTo(nomExploreMapMarkers);
+ });
+ if(points.length===1)nomExploreMapInstance.setView([points[0].coords.lat,points[0].coords.lng],14);
+ else if(points.length>1){const bounds=L.latLngBounds(points.map(item=>[item.coords.lat,item.coords.lng]));nomExploreMapInstance.fitBounds(bounds.pad(.18),{maxZoom:14});}
+ if(exploreDisplayMode==="map")requestAnimationFrame(()=>nomExploreMapInstance.invalidateSize());
+}
 function renderPlaces(list=currentResults){
   const safeList=Array.isArray(list)?list.filter(Boolean):[];
   const visibleList=photosOnly?safeList.filter(hasPlaceImage):safeList;
@@ -761,6 +825,8 @@ function renderPlaces(list=currentResults){
   if(home)home.innerHTML=empty;
   if(explore)explore.innerHTML=empty;
 }
+  renderExploreMap(safeList);
+
 
 function togglePhotosOnly(){
   photosOnly = !photosOnly;
@@ -931,6 +997,7 @@ function renderNOMSearchResults(){
  ];
  const selected=nomSearchCategory==="all"?groups:groups.filter(g=>g.key===nomSearchCategory);
  target.innerHTML=selected.map(g=>'<section class="nom-search-group"><h3>'+g.label+' <span>'+g.items.length+' found</span></h3>'+(g.items.length?g.items.slice(0,6).map(g.render).join(""):'<div class="nom-search-empty">No matching '+g.label.toLowerCase()+' yet.</div>')+'</section>').join("")||'<div class="nom-search-empty">No results found. Try another search.</div>';
+ renderExploreMap(nomSearchData.places);
 }
 function setNOMSearchView(source,active){
  ["home","explore"].forEach(page=>{
