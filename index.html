@@ -734,7 +734,7 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')closePlaceDe
 
 function placeCard(place){
   const isSaved = savedIds.includes(place.id);
-  nomDetailItems[String(place.id)]={id:place.id,kind:'place',name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],author:place.community_author,attribution:place.image_attribution,license:place.image_license};
+  const placeCoords=getNomPlaceCoordinates(place);nomDetailItems[String(place.id)]={id:place.id,kind:'place',name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],author:place.community_author,attribution:place.image_attribution,license:place.image_license,lat:placeCoords?.lat,lng:placeCoords?.lng};
   const image = place.image_url || place.image || "";
   const rating = place.rating ? "★ " + place.rating : "";
   const photoCredit = place.image_attribution
