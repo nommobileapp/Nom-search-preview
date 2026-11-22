@@ -800,7 +800,7 @@ function renderExploreMap(list=currentResults){
    .width(element.clientWidth||340)
    .height(element.clientHeight||380)
    .backgroundColor("rgba(0,0,0,0)")
-   .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-dark.jpg")
+   .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
    .showAtmosphere(true)
    .atmosphereColor("#263d4a")
    .atmosphereAltitude(0.12)
@@ -809,16 +809,23 @@ function renderExploreMap(list=currentResults){
    .pointLat("lat")
    .pointLng("lng")
    .pointColor(()=>"#ff7a24")
-   .pointRadius(0.42)
-   .pointAltitude(0.018)
-   .pointResolution(12)
+   .pointRadius(0.78)
+   .pointAltitude(0.025)
+   .pointResolution(16)
+   .ringsData([])
+   .ringLat("lat")
+   .ringLng("lng")
+   .ringColor(()=>t=>`rgba(255,122,36,${1-t})`)
+   .ringMaxRadius(0.7)
+   .ringPropagationSpeed(0.65)
+   .ringRepeatPeriod(1800)
    .pointLabel(d=>"<b style='color:#ff7a24'>"+escapeHTML(d.name)+"</b><br><span style='color:#aaa'>"+escapeHTML(d.category)+"</span>")
    .onPointClick(d=>{if(d?.id)openPlaceDetail(d.id);});
   const controls=nomGlobeInstance.controls();
   controls.enableDamping=true;
   controls.dampingFactor=0.08;
   controls.autoRotate=true;
-  controls.autoRotateSpeed=0.35;
+  controls.autoRotateSpeed=0.22;
   controls.enablePan=false;
   nomGlobeResizeObserver=new ResizeObserver(entries=>{
    const box=entries[0]?.contentRect;if(box&&nomGlobeInstance)nomGlobeInstance.width(Math.max(280,box.width)).height(Math.max(340,box.height));
@@ -826,9 +833,10 @@ function renderExploreMap(list=currentResults){
   nomGlobeResizeObserver.observe(element);
  }
  nomGlobeInstance.pointsData(points);
+ nomGlobeInstance.ringsData(points);
  if(points.length){
-  const focus=points[0];
-  nomGlobeInstance.pointOfView({lat:focus.lat,lng:focus.lng,altitude:2.25},900);
+  const focus=points.reduce((center,p)=>({lat:center.lat+p.lat/points.length,lng:center.lng+p.lng/points.length}),{lat:0,lng:0});
+  nomGlobeInstance.pointOfView({lat:focus.lat,lng:focus.lng,altitude:1.75},1100);
  }else{
   nomGlobeInstance.pointOfView({lat:15,lng:15,altitude:2.2},900);
  }
