@@ -291,6 +291,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 .nom-music-result-info strong{display:block;font-size:13px}
 .nom-music-result-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 @media(min-width:700px){.nom-music-panel{left:auto;right:20px;width:400px}}
+.nom-share-types{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.nom-share-types button{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:var(--lime);border-radius:999px;padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:.08em}.nom-share-types button:active{background:rgba(255,125,45,.2);border-color:var(--orange)}
 .nom-post-card{margin:14px 0;padding:16px;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.035)}
 .nom-post-card .post-author{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .nom-post-card .post-meta{font-size:.76rem;color:var(--lime);margin:8px 0}
@@ -367,7 +368,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
   <div class="nom-share-card"><div class="eyebrow">YOUR NOM COMMUNITY</div><h3>What's happening on your journey?</h3>
     <p>Share a moment, a story, a sound or somewhere worth discovering.</p>
     <button class="primary" type="button" onclick="showNomShareComposer()">＋ Share to NOM</button>
-    <div class="nom-share-types"><span>TEXT</span><span>PHOTO</span><span>VIDEO</span><span>AUDIO</span><span>PLACES</span></div>
+    <div class="nom-share-types" aria-label="Choose what to share"><button type="button" onclick="selectNomShareType('text')">TEXT</button><button type="button" onclick="selectNomShareType('image')">PHOTO</button><button type="button" onclick="selectNomShareType('video')">VIDEO</button><button type="button" onclick="selectNomShareType('audio')">AUDIO</button><button type="button" onclick="selectNomShareType('place')">PLACE</button></div>
   </div>
   <div class="nom-share-composer hidden" id="nomShareComposer">
     <div class="eyebrow">SHARE TO NOM</div><h2 style="margin-top:7px">Create a post</h2>
@@ -1132,6 +1133,17 @@ async
 /* UNIVERSAL SHARE TO NOM — writes to the new nom_posts system */
 const NOM_COMMUNITY_BUCKET="nom-community-media";
 const NOM_COMMUNITY_MAX_FILE=50*1024*1024;
+function selectNomShareType(type){
+  showNomShareComposer();
+  const body=document.getElementById("nomShareBody");
+  const place=document.getElementById("nomSharePlace");
+  const media=document.getElementById("nomShareMedia");
+  if(type==="text"){body.focus();return;}
+  if(type==="place"){place.focus();return;}
+  const accepts={image:"image/jpeg,image/png,image/webp",video:"video/mp4,video/webm,video/quicktime,video/x-m4v",audio:"audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg,audio/webm"};
+  media.accept=accepts[type]||"image/*,video/*,audio/*";
+  media.click();
+}
 function showNomShareComposer(){
   if(!currentUser){showPage("profile");showAuth("signup");return;}
   const composer=document.getElementById("nomShareComposer");
@@ -1253,38 +1265,49 @@ function communityPostCard(post,own=false){
 
 async function loadNomPostsFeed(){
   const feed=document.getElementById("nomPostsFeed");
-  if(!feed||!supabaseClient)return;
-  const {data:posts,error}=await supabaseClient.from("nom_posts")
-    .select("id,user_id,body,post_type,place_name,place_location,category,created_at")
-    .eq("status","published").order("created_at",{ascending:false}).limit(40);
-  if(error){console.error("NOM feed:",error);feed.innerHTML='<p class="small">NOM posts are temporarily unavailable. Please refresh and try again.</p>';return;}
-  if(!posts?.length){feed.innerHTML='<p class="small">No moments shared yet. Be the first to post to NOM.</p>';return;}
-  const ids=posts.map(post=>post.id),userIds=[...new Set(posts.map(post=>post.user_id))];
-  const [{data:media,error:mediaError},{data:profiles}] = await Promise.all([
-    supabaseClient.from("nom_post_media").select("post_id,storage_path,media_type,mime_type").in("post_id",ids).order("created_at",{ascending:true}),
-    supabaseClient.from("profiles").select("id,username,display_name,avatar_url").in("id",userIds)
-  ]);
-  if(mediaError)console.error("NOM post media:",mediaError);
-  const profileMap=Object.fromEntries((profiles||[]).map(profile=>[profile.id,profile]));
-  const mediaMap={};
-  (media||[]).forEach(item=>{
-    if(!mediaMap[item.post_id])mediaMap[item.post_id]=[];
-    const url=supabaseClient.storage.from(NOM_COMMUNITY_BUCKET).getPublicUrl(item.storage_path).data.publicUrl;
-    mediaMap[item.post_id].push({...item,url});
-  });
-  feed.innerHTML=posts.map(post=>{
-    const profile=profileMap[post.user_id]||{},username=profile.username||profile.display_name||"NOM member";
-    const avatar=nomAvatarMarkup(profile.avatar_url||"",username,true);
-    const mediaHtml=(mediaMap[post.id]||[]).map(item=>{
-      if(item.media_type==="image")return '<img class="nom-post-media" src="'+escapeHTML(item.url)+'" alt="Photo shared on NOM" loading="lazy">';
-      if(item.media_type==="video")return '<video class="nom-post-media" controls playsinline preload="metadata" src="'+escapeHTML(item.url)+'"></video>';
-      if(item.media_type==="audio")return '<audio class="nom-post-audio" controls preload="metadata" src="'+escapeHTML(item.url)+'"></audio>';
-      return "";
+  if(!feed)return;
+  if(!supabaseClient){feed.innerHTML='<p class="small">NOM Community is temporarily unavailable. Please refresh.</p>';return;}
+  feed.innerHTML='<p class="small">Loading NOM posts...</p>';
+  try{
+    const {data:posts,error}=await supabaseClient.from("nom_posts")
+      .select("id,user_id,body,post_type,place_name,place_location,category,created_at")
+      .eq("status","published").order("created_at",{ascending:false}).limit(40);
+    if(error)throw error;
+    if(!posts?.length){feed.innerHTML='<p class="small">No moments shared yet. Be the first to post to NOM.</p>';return;}
+    const ids=posts.map(post=>post.id),userIds=[...new Set(posts.map(post=>post.user_id))];
+    const mediaResult=await supabaseClient.from("nom_post_media").select("post_id,storage_path,media_type,mime_type").in("post_id",ids).order("created_at",{ascending:true});
+    const media=mediaResult.error?[]:(mediaResult.data||[]);
+    if(mediaResult.error)console.warn("NOM post media:",mediaResult.error.message);
+    let profiles=[];
+    if(currentUser&&userIds.length){
+      const profileResult=await supabaseClient.from("profiles").select("id,username,display_name,avatar_url").in("id",userIds);
+      if(!profileResult.error)profiles=profileResult.data||[];
+      else console.warn("NOM post profiles:",profileResult.error.message);
+    }
+    const profileMap=Object.fromEntries(profiles.map(profile=>[profile.id,profile]));
+    const mediaMap={};
+    media.forEach(item=>{
+      if(!mediaMap[item.post_id])mediaMap[item.post_id]=[];
+      const url=supabaseClient.storage.from(NOM_COMMUNITY_BUCKET).getPublicUrl(item.storage_path).data.publicUrl;
+      mediaMap[item.post_id].push({...item,url});
+    });
+    feed.innerHTML=posts.map(post=>{
+      const profile=profileMap[post.user_id]||{},username=profile.username||profile.display_name||"NOM member";
+      const avatar=nomAvatarMarkup(profile.avatar_url||"",username,true);
+      const mediaHtml=(mediaMap[post.id]||[]).map(item=>{
+        if(item.media_type==="image")return '<img class="nom-post-media" src="'+escapeHTML(item.url)+'" alt="Photo shared on NOM" loading="lazy">';
+        if(item.media_type==="video")return '<video class="nom-post-media" controls playsinline preload="metadata" src="'+escapeHTML(item.url)+'"></video>';
+        if(item.media_type==="audio")return '<audio class="nom-post-audio" controls preload="metadata" src="'+escapeHTML(item.url)+'"></audio>';
+        return "";
+      }).join("");
+      const place=post.place_name?'<div class="post-meta">📍 '+escapeHTML(post.place_name)+(post.place_location?' · '+escapeHTML(post.place_location):"")+'</div>':"";
+      const date=new Date(post.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"});
+      return '<article class="feed-card nom-post-card"><div class="post-author">'+avatar+'<span>'+escapeHTML(username)+'</span><span class="small"> · '+escapeHTML(date)+'</span></div><div class="post-meta">'+escapeHTML(post.category||"General")+' · '+escapeHTML(post.post_type||"text")+'</div>'+(post.body?'<p class="nom-post-body">'+escapeHTML(post.body)+'</p>':"")+place+mediaHtml+'</article>';
     }).join("");
-    const place=post.place_name?'<div class="post-meta">📍 '+escapeHTML(post.place_name)+(post.place_location?' · '+escapeHTML(post.place_location):"")+'</div>':"";
-    const date=new Date(post.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"});
-    return '<article class="feed-card nom-post-card"><div class="post-author">'+avatar+'<span>'+escapeHTML(username)+'</span><span class="small"> · '+escapeHTML(date)+'</span></div><div class="post-meta">'+escapeHTML(post.category||"General")+' · '+escapeHTML(post.post_type||"text")+'</div>'+(post.body?'<p class="nom-post-body">'+escapeHTML(post.body)+'</p>':"")+place+mediaHtml+'</article>';
-  }).join("");
+  }catch(error){
+    console.error("NOM Community feed:",error);
+    feed.innerHTML='<p class="small">Cannot access NOM Community right now. Please refresh and try again.</p>';
+  }
 }
 
 async function loadCommunityFeed(){
