@@ -263,6 +263,17 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 #nomExploreMap canvas{display:block;max-width:100%;outline:none}
 .nom-map-message{min-height:18px}
 #nomExploreMap.hidden{display:none!important}
+.nom-globe-controls{display:flex;justify-content:center;gap:12px;margin:10px 0}
+.nom-globe-controls button{min-width:58px;padding:9px 16px;border:1px solid #444;border-radius:18px;background:#1b1d1f;color:#f5f5f2;font-size:18px;font-weight:700}
+.nom-globe-results{display:grid;gap:8px;margin:14px 0 18px}
+.nom-globe-place{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:1px solid #303336;border-radius:14px;background:#1b1d1f;color:#f5f5f2;text-align:left}
+.nom-globe-place:before{content:"";flex:0 0 11px;width:11px;height:11px;border-radius:50%;background:#ff7a24;box-shadow:0 0 10px #ff7a2480}
+.nom-globe-place strong{display:block;font-size:13px}
+.nom-globe-place small{display:block;color:#9b9fa3;font-size:11px;margin-top:3px}
+.nom-directions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.nom-directions a{display:inline-flex;align-items:center;justify-content:center;padding:11px 15px;border-radius:20px;background:#ff7a24;color:#111;font-weight:700;text-decoration:none;font-size:12px}
+.nom-directions a.secondary{background:#25282b;color:#f5f5f2;border:1px solid #45494c}
+
 .nom-map-message{font-size:12px;color:var(--muted);margin:8px 2px 12px}
 .nom-globe-hint{font-size:11px;color:#9b9fa3;text-align:center;margin-top:8px}
 
@@ -313,7 +324,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
   <h1>Find your next destination.</h1>
   <input class="search" id="exploreSearch" placeholder="Search places, members, community, work..." oninput="searchNOM(this.value,'explore')"><div class="nom-universal-search hidden" id="exploreUniversalSearch"><div class="nom-search-tabs" id="exploreSearchTabs"></div><div id="exploreSearchResults" aria-live="polite"><div class="nom-search-hint">Search across NOM.</div></div></div>
   <div class="nom-explore-view-toggle" aria-label="Explore view"><button type="button" id="nomExploreListButton" class="active" aria-pressed="true" onclick="setExploreView('list')">☷ List</button><button type="button" id="nomExploreMapButton" aria-pressed="false" onclick="setExploreView('map')">⌖ Map</button></div>
-  <div id="nomExploreMap" class="hidden" role="region" aria-label="Interactive NOM globe"></div><p id="nomMapMessage" class="nom-map-message hidden">Search for places to see them on the globe.</p><p class="nom-globe-hint" id="nomGlobeHint">Drag to rotate · Tap an orange pin to explore</p>
+  <div id="nomExploreMap" class="hidden" role="region" aria-label="Interactive NOM globe"></div><div id="nomGlobeControls" class="nom-globe-controls hidden"><button type="button" aria-label="Zoom in" onclick="zoomNomGlobe(-0.35)">+</button><button type="button" aria-label="Zoom out" onclick="zoomNomGlobe(0.35)">−</button><button type="button" onclick="resetNomGlobeView()">Reset</button></div><p id="nomMapMessage" class="nom-map-message hidden">Search for places to see them on the globe.</p><p class="nom-globe-hint hidden" id="nomGlobeHint">Select a place below or tap a pin · Drag to rotate</p><div id="nomGlobeResults" class="nom-globe-results hidden"></div>
 
   <div class="categories">
     <button class="category active" onclick="filterPlaces('All',this)">All</button>
@@ -694,8 +705,9 @@ function openPlaceDetail(id){
  const gallery=photos.length||videos.length?'<div class="detail-gallery">'+photos.map(url=>'<img src="'+escapeHTML(url)+'" alt="'+escapeHTML(item.name)+'" loading="lazy">').join('')+videos.map(url=>'<video controls playsinline preload="metadata" src="'+escapeHTML(url)+'"></video>').join('')+'</div>':'';
  const rating=item.rating?'★ '+item.rating:'';
  const save=item.kind==='place'?'<button class="primary" data-place-id="'+escapeHTML(String(item.id))+'" onclick="toggleSave(this.dataset.placeId);closePlaceDetail()">♡ Save this place</button>':'';
+ const directions=item.kind==='place'&&Number.isFinite(Number(item.lat))&&Number.isFinite(Number(item.lng))?'<div class="nom-directions"><a href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(item.lat+','+item.lng)+'" target="_blank" rel="noopener">Google Maps ↗</a><a class="secondary" href="https://waze.com/ul?ll='+encodeURIComponent(item.lat+','+item.lng)+'&navigate=yes" target="_blank" rel="noopener">Waze ↗</a></div>':'';
  const credit=item.attribution?'<p class="detail-credit">Photo: '+escapeHTML(item.attribution)+' · '+escapeHTML(item.license||'Licence details unavailable')+'</p>':'';
- document.getElementById('placeDetailBody').innerHTML=gallery+'<div class="detail-copy"><div class="eyebrow">'+escapeHTML((item.category||'DISCOVERY').toUpperCase())+(rating?' · '+escapeHTML(rating):'')+'</div><h1>'+escapeHTML(item.name)+'</h1><div class="detail-location">'+escapeHTML(item.location||'')+(item.price?' · '+escapeHTML(item.price):'')+'</div><p class="detail-description">'+escapeHTML(item.description||'')+'</p>'+(item.author?'<p class="small">Shared by '+escapeHTML(item.author)+'</p>':'')+save+credit+'</div>';
+ document.getElementById('placeDetailBody').innerHTML=gallery+'<div class="detail-copy"><div class="eyebrow">'+escapeHTML((item.category||'DISCOVERY').toUpperCase())+(rating?' · '+escapeHTML(rating):'')+'</div><h1>'+escapeHTML(item.name)+'</h1><div class="detail-location">'+escapeHTML(item.location||'')+(item.price?' · '+escapeHTML(item.price):'')+'</div><p class="detail-description">'+escapeHTML(item.description||'')+'</p>'+(item.author?'<p class="small">Shared by '+escapeHTML(item.author)+'</p>':'')+save+directions+credit+'</div>';
  const overlay=document.getElementById('placeDetailOverlay');
  if(!detailHistoryOpen){
    history.pushState({...history.state,nomPlaceDetail:true},'',location.pathname+location.search+'#place-detail');
@@ -772,6 +784,8 @@ function setExploreView(mode){
  document.getElementById("nomExploreMap")?.classList.toggle("hidden",!mapMode);
  document.getElementById("nomMapMessage")?.classList.toggle("hidden",!mapMode);
  document.getElementById("nomGlobeHint")?.classList.toggle("hidden",!mapMode);
+ document.getElementById("nomGlobeControls")?.classList.toggle("hidden",!mapMode);
+ document.getElementById("nomGlobeResults")?.classList.toggle("hidden",!mapMode);
  const searching=document.getElementById("exploreUniversalSearch")&&!document.getElementById("exploreUniversalSearch").classList.contains("hidden");
  const cards=document.getElementById("explorePlaces");if(cards)cards.style.display=(mapMode||searching)?"none":"";
  const categories=document.querySelector("#explorePage .categories");if(categories)categories.style.display=(mapMode||searching)?"none":"";
@@ -784,12 +798,15 @@ function setExploreView(mode){
   renderExploreMap(universal&&!universal.classList.contains("hidden")?nomSearchData.places:currentResults);
  }
 }
+function zoomNomGlobe(delta){if(!nomGlobeInstance)return;const pov=nomGlobeInstance.pointOfView();nomGlobeInstance.pointOfView({...pov,altitude:Math.max(0.85,Math.min(4.5,pov.altitude+delta))},350);}
+function resetNomGlobeView(){if(!nomGlobeInstance)return;const pts=nomGlobeInstance.pointsData()||[];if(!pts.length)return;const center=pts.reduce((c,p)=>({lat:c.lat+p.lat/pts.length,lng:c.lng+p.lng/pts.length}),{lat:0,lng:0});nomGlobeInstance.pointOfView({lat:center.lat,lng:center.lng,altitude:1.75},600);}
+function focusNomGlobePlace(id){if(!nomGlobeInstance)return;const p=(nomGlobeInstance.pointsData()||[]).find(x=>x.id===id);if(!p)return;nomGlobeInstance.pointOfView({lat:p.lat,lng:p.lng,altitude:1.15},650);setTimeout(()=>openPlaceDetail(id),450);}
 function renderExploreMap(list=currentResults){
  const element=document.getElementById("nomExploreMap");if(!element)return;
  const records=Array.isArray(list)?list:[];
  const points=records.map(place=>({place,coords:getNomPlaceCoordinates(place)})).filter(item=>item.coords).map(({place,coords})=>{
   const id=String(place.id??place.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");
-  nomDetailItems[id]={id:place.id??place.source_id,kind:"place",name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],attribution:place.image_attribution,license:place.image_license};
+  nomDetailItems[id]={id:place.id??place.source_id,kind:"place",name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],attribution:place.image_attribution,license:place.image_license,lat:coords.lat,lng:coords.lng};
   return {id,name:place.name||"NOM place",lat:coords.lat,lng:coords.lng,category:place.category||"Place"};
  });
  const message=document.getElementById("nomMapMessage");
@@ -809,7 +826,7 @@ function renderExploreMap(list=currentResults){
    .pointLat("lat")
    .pointLng("lng")
    .pointColor(()=>"#ff7a24")
-   .pointRadius(0.78)
+   .pointRadius(1.35)
    .pointAltitude(0.025)
    .pointResolution(16)
    .ringsData([])
@@ -824,8 +841,11 @@ function renderExploreMap(list=currentResults){
   const controls=nomGlobeInstance.controls();
   controls.enableDamping=true;
   controls.dampingFactor=0.08;
-  controls.autoRotate=true;
-  controls.autoRotateSpeed=0.22;
+  controls.autoRotate=false;
+  controls.enableZoom=true;
+  controls.minDistance=115;
+  controls.maxDistance=420;
+  controls.autoRotateSpeed=0;
   controls.enablePan=false;
   nomGlobeResizeObserver=new ResizeObserver(entries=>{
    const box=entries[0]?.contentRect;if(box&&nomGlobeInstance)nomGlobeInstance.width(Math.max(280,box.width)).height(Math.max(340,box.height));
@@ -834,6 +854,8 @@ function renderExploreMap(list=currentResults){
  }
  nomGlobeInstance.pointsData(points);
  nomGlobeInstance.ringsData(points);
+ const resultList=document.getElementById("nomGlobeResults");
+ if(resultList)resultList.innerHTML=points.map(p=>'<button type="button" class="nom-globe-place" onclick="focusNomGlobePlace(\''+escapeHTML(p.id)+'\')"><span><strong>'+escapeHTML(p.name)+'</strong><small>'+escapeHTML(p.category)+'</small></span></button>').join("");
  if(points.length){
   const focus=points.reduce((center,p)=>({lat:center.lat+p.lat/points.length,lng:center.lng+p.lng/points.length}),{lat:0,lng:0});
   nomGlobeInstance.pointOfView({lat:focus.lat,lng:focus.lng,altitude:1.75},1100);
