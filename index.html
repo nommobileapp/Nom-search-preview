@@ -460,6 +460,9 @@ let currentResults = [];
 let searchRequestId = 0;
 
 let savedIds = JSON.parse(localStorage.getItem("nomSaved") || "[]");
+let savedPlaceRecords = [];
+let savedPlacesLoadedUser = null;
+let savedPlacesLoadingUser = null;
 let trips = JSON.parse(localStorage.getItem("nomTrips") || "[]");
 
 /* NAVIGATION */
@@ -678,7 +681,7 @@ function openPlaceDetail(id){
  const gallery=photos.length||videos.length?'<div class="detail-gallery">'+photos.map(url=>'<img src="'+escapeHTML(url)+'" alt="'+escapeHTML(item.name)+'" loading="lazy">').join('')+videos.map(url=>'<video controls playsinline preload="metadata" src="'+escapeHTML(url)+'"></video>').join('')+'</div>':'';
  const rating=item.rating?'★ '+item.rating:'';
  const isSaved=savedIds.map(String).includes(String(item.id));
- const save=item.kind==='place'?'<button class="primary" data-place-id="'+escapeHTML(String(item.id))+'" onclick="savePlaceFromDetail(this.dataset.placeId);closePlaceDetail()">'+(isSaved?'♥ Saved — remove':'♡ Save this place')+'</button>':'';
+ const save=item.kind==='place'?'<button class="primary" data-place-id="'+escapeHTML(String(item.id))+'" onclick="savePlaceFromDetail(this.dataset.placeId)">'+(isSaved?'♥ Saved — remove':'♡ Save this place')+'</button>':'';
  const credit=item.attribution?'<p class="detail-credit">Photo: '+escapeHTML(item.attribution)+' · '+escapeHTML(item.license||'Licence details unavailable')+'</p>':'';
  document.getElementById('placeDetailBody').innerHTML=gallery+'<div class="detail-copy"><div class="eyebrow">'+escapeHTML((item.category||'DISCOVERY').toUpperCase())+(rating?' · '+escapeHTML(rating):'')+'</div><h1>'+escapeHTML(item.name)+'</h1><div class="detail-location">'+escapeHTML(item.location||'')+(item.price?' · '+escapeHTML(item.price):'')+'</div><p class="detail-description">'+escapeHTML(item.description||'')+'</p>'+(item.author?'<p class="small">Shared by '+escapeHTML(item.author)+'</p>':'')+save+credit+'</div>';
  const overlay=document.getElementById('placeDetailOverlay');
@@ -706,7 +709,7 @@ window.addEventListener('popstate',()=>{
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closePlaceDetail();});
 
 function placeCard(place){
-  const isSaved = savedIds.includes(place.id);
+  const isSaved = savedIds.map(String).includes(String(place.id));
   nomDetailItems[String(place.id)]={id:place.id,kind:'place',name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],author:place.community_author,attribution:place.image_attribution,license:place.image_license};
   const image = place.image_url || place.image || "";
   const rating = place.rating ? "★ " + place.rating : "";
@@ -1121,41 +1124,121 @@ function getSavedPlaceRecords(){
   return Array.isArray(value)?value:[];
  }catch(_){return [];}
 }
-function savePlaceFromDetail(id){
+function getGuestSavedIds(){
+ try{
+  const value=JSON.parse(localStorage.getItem("nomSaved")||"[]");
+  return Array.isArray(value)?value.map(String):[];
+ }catch(_){return [];}
+}
+function resetSavedPlacesForGuest(){
+ savedPlacesLoadedUser=null;
+ savedPlacesLoadingUser=null;
+ savedPlaceRecords=[];
+ savedIds=getGuestSavedIds();
+ renderSaved();
+ renderPlaces();
+}
+async function loadSavedPlacesForUser(userId){
+ if(!userId||!supabaseClient)return;
+ if(savedPlacesLoadedUser===userId||savedPlacesLoadingUser===userId)return;
+ savedPlacesLoadingUser=userId;
+ savedIds=[];
+ savedPlaceRecords=[];
+ try{
+  const guestIds=getGuestSavedIds();
+  const guestRecords=getSavedPlaceRecords().filter(place=>guestIds.includes(String(place.id)));
+  if(guestRecords.length){
+   const rows=guestRecords.map(place=>({
+    user_id:userId,
+    place_key:String(place.id),
+    place_data:{...place,id:String(place.id)}
+   }));
+   const {error:migrateError}=await supabaseClient.from("saved_places").upsert(rows,{onConflict:"user_id,place_key",ignoreDuplicates:true});
+   if(migrateError)throw migrateError;
+   localStorage.removeItem("nomSaved");
+   localStorage.removeItem("nomSavedPlaces");
+  }
+  const {data,error}=await supabaseClient
+   .from("saved_places")
+   .select("place_key,place_data,created_at")
+   .eq("user_id",userId)
+   .order("created_at",{ascending:false});
+  if(error)throw error;
+  if(currentUser?.id!==userId)return;
+  savedPlaceRecords=Array.isArray(data)?data:[];
+  savedIds=savedPlaceRecords.map(row=>String(row.place_key));
+  savedPlacesLoadedUser=userId;
+ }catch(error){
+  console.warn("NOM saved places sync:",error.message);
+  savedPlaceRecords=[];
+  savedIds=[];
+ }finally{
+  if(savedPlacesLoadingUser===userId)savedPlacesLoadingUser=null;
+  renderSaved();
+  renderPlaces();
+ }
+}
+async function savePlaceFromDetail(id){
  const key=String(id);
  const item=Object.values(nomDetailItems).find(place=>String(place.id)===key);
- if(!item)return;
+ if(!item)return false;
  const record={...item,id:key,image_url:(item.photos||[])[0]||null,image:(item.photos||[])[0]||null,video_urls:item.videos||[]};
  const index=places.findIndex(place=>String(place.id)===key);
  if(index>=0)places[index]={...places[index],...record};
  else places.push(record);
- toggleSave(key);
+ const saved=await toggleSave(key);
+ if(saved)closePlaceDetail();
+ return saved;
 }
-function saveNomSearchPlace(id){
+async function saveNomSearchPlace(id){
  const key=String(id);
  const item=Object.values(nomDetailItems).find(place=>String(place.id)===key);
- if(!item)return;
+ if(!item)return false;
  const record={...item,id:key,image_url:(item.photos||[])[0]||null,image:(item.photos||[])[0]||null,video_urls:item.videos||[]};
  const index=places.findIndex(place=>String(place.id)===key);
  if(index>=0)places[index]={...places[index],...record};
  else places.push(record);
  currentResults=mergePlaceRecords([...currentResults,record]);
- toggleSave(key);
+ const saved=await toggleSave(key);
  renderNOMSearchResults();
+ return saved;
 }
-function toggleSave(id){
+async function toggleSave(id){
  id=String(id);
- savedIds=savedIds.map(String);
+ if(currentUser&&supabaseClient){
+  const isSaved=savedIds.map(String).includes(id);
+  if(isSaved){
+   const {error}=await supabaseClient.from("saved_places").delete().eq("user_id",currentUser.id).eq("place_key",id);
+   if(error){console.warn("NOM unsave failed:",error.message);alert("Could not remove this saved place. Please try again.");return false;}
+   savedIds=savedIds.filter(item=>String(item)!==id);
+   savedPlaceRecords=savedPlaceRecords.filter(row=>String(row.place_key)!==id);
+  }else{
+   const record=places.find(place=>String(place.id)===id)
+    ||currentResults.find(place=>String(place.id)===id)
+    ||Object.values(nomDetailItems).find(place=>String(place.id)===id);
+   if(!record){alert("Place details are not available yet. Please reopen the place and try again.");return false;}
+   const placeData={...record,id};
+   const {error}=await supabaseClient.from("saved_places").insert({user_id:currentUser.id,place_key:id,place_data:placeData});
+   if(error){console.warn("NOM save failed:",error.message);alert("Could not save this place. Please try again.");return false;}
+   savedIds=[...savedIds.map(String),id];
+   savedPlaceRecords=[{place_key:id,place_data:placeData,created_at:new Date().toISOString()},...savedPlaceRecords.filter(row=>String(row.place_key)!==id)];
+  }
+  renderPlaces();
+  renderSaved();
+  return true;
+ }
+
  let records=getSavedPlaceRecords();
- if(savedIds.includes(id)){
-  savedIds=savedIds.filter(item=>item!==id);
+ const guestIds=getGuestSavedIds();
+ if(guestIds.includes(id)){
+  savedIds=guestIds.filter(item=>item!==id);
   records=records.filter(place=>String(place.id)!==id);
  }else{
   const record=places.find(place=>String(place.id)===id)
-    ||currentResults.find(place=>String(place.id)===id)
-    ||Object.values(nomDetailItems).find(place=>String(place.id)===id);
-  if(!record)return;
-  savedIds.push(id);
+   ||currentResults.find(place=>String(place.id)===id)
+   ||Object.values(nomDetailItems).find(place=>String(place.id)===id);
+  if(!record)return false;
+  savedIds=[...guestIds,id];
   records=records.filter(place=>String(place.id)!==id);
   records.push({...record,id});
  }
@@ -1163,13 +1246,24 @@ function toggleSave(id){
  localStorage.setItem("nomSavedPlaces",JSON.stringify(records));
  renderPlaces();
  renderSaved();
+ return true;
 }
 function renderSaved(){
- const stored=getSavedPlaceRecords();
- const legacy=places.filter(place=>savedIds.map(String).includes(String(place.id)));
- const byId=new Map();
- [...legacy,...stored].forEach(place=>byId.set(String(place.id),place));
- const list=[...byId.values()].filter(place=>savedIds.map(String).includes(String(place.id)));
+ let list=[];
+ if(currentUser){
+  list=savedPlaceRecords.map(row=>({...row.place_data,id:String(row.place_key)}));
+  if(savedPlacesLoadingUser===currentUser.id&&!savedPlacesLoadedUser){
+   document.getElementById("savedPlaces").innerHTML='<p>Loading your saved places...</p>';
+   return;
+  }
+ }else{
+  const stored=getSavedPlaceRecords();
+  const guestIds=getGuestSavedIds();
+  const legacy=places.filter(place=>guestIds.includes(String(place.id)));
+  const byId=new Map();
+  [...legacy,...stored].forEach(place=>byId.set(String(place.id),place));
+  list=[...byId.values()].filter(place=>guestIds.includes(String(place.id)));
+ }
  document.getElementById("savedPlaces").innerHTML=list.length
   ?list.map(placeCard).join("")
   :'<p>No saved places yet. Explore NOM and save somewhere you love.</p>';
@@ -1493,6 +1587,7 @@ async function logout(){
     if(error) throw error;
 
     currentUser = null;
+    resetSavedPlacesForGuest();
     updateProfile();
     message.textContent = "You have logged out.";
   }catch(error){
@@ -1512,7 +1607,13 @@ async function initialiseApp(){
 
     currentUser = data.session ? data.session.user : null;
     updateProfile();
-    if(currentUser){startNomNotificationListener();uploadPendingRegistrationAvatar(currentUser).catch(error=>console.warn("NOM avatar upload:",error.message));}
+    if(currentUser){
+      startNomNotificationListener();
+      uploadPendingRegistrationAvatar(currentUser).catch(error=>console.warn("NOM avatar upload:",error.message));
+      loadSavedPlacesForUser(currentUser.id);
+    }else{
+      resetSavedPlacesForGuest();
+    }
 
     supabaseClient.auth.onAuthStateChange((_event,session)=>{
       const previousUserId=currentUser?.id||null;
@@ -1520,9 +1621,14 @@ async function initialiseApp(){
       const nextUserId=currentUser?.id||null;
       updateProfile();
       if(currentUser){
+        loadSavedPlacesForUser(currentUser.id);
         startNomNotificationListener();
         setTimeout(()=>uploadPendingRegistrationAvatar(currentUser).catch(error=>console.warn("NOM avatar upload:",error.message)),0);
-      }else{if(nomNotificationChannel){supabaseClient.removeChannel(nomNotificationChannel);nomNotificationChannel=null;}renderNomUnreadBadges(0);}
+      }else{
+        resetSavedPlacesForGuest();
+        if(nomNotificationChannel){supabaseClient.removeChannel(nomNotificationChannel);nomNotificationChannel=null;}
+        renderNomUnreadBadges(0);
+      }
       if(previousUserId!==nextUserId){
         const ownMedia=document.getElementById("workPortfolioMedia");
         const publicPanel=document.getElementById("workPublicPortfolio");
