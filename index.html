@@ -7,8 +7,8 @@
 <meta name="theme-color" content="#101010">
 <title>NOM — Journey Beyond</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/globe.gl@2.41.3/dist/globe.gl.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
 
@@ -255,18 +255,16 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 .nom-search-kind{color:var(--orange);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
 .nom-search-empty,.nom-search-hint{font-size:12px;color:var(--muted);padding:12px 2px}
 .nom-search-loading{color:var(--lime);font-size:12px;padding:14px 2px}
-/* NOM Explore map — lightweight Leaflet prototype */
+/* NOM Explore — interactive dark globe prototype */
 .nom-explore-view-toggle{display:flex;gap:8px;margin:12px 0 14px}
 .nom-explore-view-toggle button{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:24px;background:var(--panel);color:var(--white);font-weight:700}
 .nom-explore-view-toggle button.active{background:var(--lime);border-color:var(--lime);color:#111}
-#nomExploreMap{height:min(66vh,560px);min-height:340px;border:1px solid var(--border);border-radius:18px;overflow:hidden;background:#202522;position:relative;z-index:1}
+#nomExploreMap{height:min(62vh,540px);min-height:360px;border:1px solid #303336;border-radius:22px;overflow:hidden;background:radial-gradient(circle at 50% 42%,#1a2428 0%,#0b0d10 68%);position:relative;z-index:1;touch-action:pan-y}
+#nomExploreMap canvas{display:block;max-width:100%;outline:none}
+.nom-map-message{min-height:18px}
 #nomExploreMap.hidden{display:none!important}
 .nom-map-message{font-size:12px;color:var(--muted);margin:8px 2px 12px}
-.nom-map-marker{width:20px;height:20px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--orange);border:2px solid #fff;box-shadow:0 2px 8px #0009}
-.nom-map-marker:after{content:"";display:block;width:6px;height:6px;border-radius:50%;background:#111;position:absolute;top:5px;left:5px}
-.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#1b1b1b;color:#f5f5f5}
-.leaflet-popup-content{font-family:Arial,Helvetica,sans-serif;font-size:12px}
-.leaflet-control-attribution{font-size:9px!important}
+.nom-globe-hint{font-size:11px;color:#9b9fa3;text-align:center;margin-top:8px}
 
 </style>
 </head>
@@ -315,7 +313,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
   <h1>Find your next destination.</h1>
   <input class="search" id="exploreSearch" placeholder="Search places, members, community, work..." oninput="searchNOM(this.value,'explore')"><div class="nom-universal-search hidden" id="exploreUniversalSearch"><div class="nom-search-tabs" id="exploreSearchTabs"></div><div id="exploreSearchResults" aria-live="polite"><div class="nom-search-hint">Search across NOM.</div></div></div>
   <div class="nom-explore-view-toggle" aria-label="Explore view"><button type="button" id="nomExploreListButton" class="active" aria-pressed="true" onclick="setExploreView('list')">☷ List</button><button type="button" id="nomExploreMapButton" aria-pressed="false" onclick="setExploreView('map')">⌖ Map</button></div>
-  <div id="nomExploreMap" class="hidden" role="region" aria-label="Map of NOM places"></div><p id="nomMapMessage" class="nom-map-message hidden">Search for places to see them on the map.</p>
+  <div id="nomExploreMap" class="hidden" role="region" aria-label="Interactive NOM globe"></div><p id="nomMapMessage" class="nom-map-message hidden">Search for places to see them on the globe.</p><p class="nom-globe-hint" id="nomGlobeHint">Drag to rotate · Tap an orange pin to explore</p>
 
   <div class="categories">
     <button class="category active" onclick="filterPlaces('All',this)">All</button>
@@ -762,7 +760,7 @@ function hasPlaceImage(place){
 }
 
 
-let nomExploreMapInstance=null,nomExploreMapMarkers=null,exploreDisplayMode="list";
+let nomGlobeInstance=null,exploreDisplayMode="list",nomGlobeResizeObserver=null;
 function getNomPlaceCoordinates(place){
  const lat=Number(place?.lat??place?.latitude??place?.geometry?.coordinates?.[1]);
  const lng=Number(place?.lon??place?.lng??place?.longitude??place?.geometry?.coordinates?.[0]);
@@ -773,6 +771,7 @@ function setExploreView(mode){
  const mapMode=exploreDisplayMode==="map";
  document.getElementById("nomExploreMap")?.classList.toggle("hidden",!mapMode);
  document.getElementById("nomMapMessage")?.classList.toggle("hidden",!mapMode);
+ document.getElementById("nomGlobeHint")?.classList.toggle("hidden",!mapMode);
  const searching=document.getElementById("exploreUniversalSearch")&&!document.getElementById("exploreUniversalSearch").classList.contains("hidden");
  const cards=document.getElementById("explorePlaces");if(cards)cards.style.display=(mapMode||searching)?"none":"";
  const categories=document.querySelector("#explorePage .categories");if(categories)categories.style.display=(mapMode||searching)?"none":"";
@@ -788,28 +787,54 @@ function setExploreView(mode){
 function renderExploreMap(list=currentResults){
  const element=document.getElementById("nomExploreMap");if(!element)return;
  const records=Array.isArray(list)?list:[];
- const points=records.map(place=>({place,coords:getNomPlaceCoordinates(place)})).filter(item=>item.coords);
- const message=document.getElementById("nomMapMessage");
- if(message)message.textContent=points.length?points.length+" place"+(points.length===1?"":"s")+" on the map. Tap a pin to open its NOM details.":(records.length?"These results do not include map coordinates yet. Try another place search.":"Search for places to see them on the map.");
- if(!window.L)return;
- if(!nomExploreMapInstance){
-  nomExploreMapInstance=L.map(element,{zoomControl:true,scrollWheelZoom:false}).setView([-8.4095,115.1889],9);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© <a href='https://www.openstreetmap.org/copyright' target='_blank' rel='noopener'>OpenStreetMap</a> contributors"}).addTo(nomExploreMapInstance);
-  nomExploreMapMarkers=L.layerGroup().addTo(nomExploreMapInstance);
- }
- nomExploreMapMarkers.clearLayers();
- points.forEach(({place,coords})=>{
+ const points=records.map(place=>({place,coords:getNomPlaceCoordinates(place)})).filter(item=>item.coords).map(({place,coords})=>{
   const id=String(place.id??place.source_id??"").replace(/[^a-zA-Z0-9_-]/g,"");
   nomDetailItems[id]={id:place.id??place.source_id,kind:"place",name:place.name,description:place.description,location:place.location,category:place.category,price:place.price,rating:place.rating,photos:[place.image_url||place.image].filter(Boolean),videos:place.video_urls||[],attribution:place.image_attribution,license:place.image_license};
-  const marker=L.marker([coords.lat,coords.lng],{title:place.name||"NOM place",icon:L.divIcon({className:"",html:"<div class='nom-map-marker'></div>",iconSize:[20,24],iconAnchor:[10,22]})});
-  marker.bindTooltip(escapeHTML(place.name||"NOM place"),{direction:"top"});
-  marker.on("click",()=>openPlaceDetail(id));
-  marker.addTo(nomExploreMapMarkers);
+  return {id,name:place.name||"NOM place",lat:coords.lat,lng:coords.lng,category:place.category||"Place"};
  });
- if(points.length===1)nomExploreMapInstance.setView([points[0].coords.lat,points[0].coords.lng],14);
- else if(points.length>1){const bounds=L.latLngBounds(points.map(item=>[item.coords.lat,item.coords.lng]));nomExploreMapInstance.fitBounds(bounds.pad(.18),{maxZoom:14});}
- if(exploreDisplayMode==="map")requestAnimationFrame(()=>nomExploreMapInstance.invalidateSize());
+ const message=document.getElementById("nomMapMessage");
+ if(message)message.textContent=points.length?points.length+" location"+(points.length===1?"":"s")+" ready to explore. Tap an orange pin.":(records.length?"These results don't include coordinates yet. Try another place search.":"Search for places to see them on the globe.");
+ if(!window.Globe)return;
+ if(!nomGlobeInstance){
+  nomGlobeInstance=Globe()(element)
+   .width(element.clientWidth||340)
+   .height(element.clientHeight||380)
+   .backgroundColor("rgba(0,0,0,0)")
+   .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-dark.jpg")
+   .showAtmosphere(true)
+   .atmosphereColor("#263d4a")
+   .atmosphereAltitude(0.12)
+   .showGraticules(false)
+   .pointsData([])
+   .pointLat("lat")
+   .pointLng("lng")
+   .pointColor(()=>"#ff7a24")
+   .pointRadius(0.42)
+   .pointAltitude(0.018)
+   .pointResolution(12)
+   .pointLabel(d=>"<b style='color:#ff7a24'>"+escapeHTML(d.name)+"</b><br><span style='color:#aaa'>"+escapeHTML(d.category)+"</span>")
+   .onPointClick(d=>{if(d?.id)openPlaceDetail(d.id);});
+  const controls=nomGlobeInstance.controls();
+  controls.enableDamping=true;
+  controls.dampingFactor=0.08;
+  controls.autoRotate=true;
+  controls.autoRotateSpeed=0.35;
+  controls.enablePan=false;
+  nomGlobeResizeObserver=new ResizeObserver(entries=>{
+   const box=entries[0]?.contentRect;if(box&&nomGlobeInstance)nomGlobeInstance.width(Math.max(280,box.width)).height(Math.max(340,box.height));
+  });
+  nomGlobeResizeObserver.observe(element);
+ }
+ nomGlobeInstance.pointsData(points);
+ if(points.length){
+  const focus=points[0];
+  nomGlobeInstance.pointOfView({lat:focus.lat,lng:focus.lng,altitude:2.25},900);
+ }else{
+  nomGlobeInstance.pointOfView({lat:15,lng:15,altitude:2.2},900);
+ }
+ requestAnimationFrame(()=>{if(nomGlobeInstance)nomGlobeInstance.width(element.clientWidth||340).height(element.clientHeight||380);});
 }
+
 function renderPlaces(list=currentResults){
   const safeList=Array.isArray(list)?list.filter(Boolean):[];
   const visibleList=photosOnly?safeList.filter(hasPlaceImage):safeList;
