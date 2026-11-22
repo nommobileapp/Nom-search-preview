@@ -255,16 +255,16 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 .nom-search-loading{color:var(--lime);font-size:12px;padding:14px 2px}
 
 /* NOM MUSIC — Apple previews + embedded Spotify, persistent dock */
-.nom-music-toggle{position:fixed;right:14px;bottom:88px;z-index:70;border:1px solid #454545;border-radius:999px;background:#1b1d1f;color:var(--white);padding:10px 16px;font-weight:700;box-shadow:0 4px 18px #000b}
+.nom-music-toggle{position:fixed;right:16px;bottom:88px;z-index:70;width:48px;height:48px;display:grid;place-items:center;border:1px solid #454545;border-radius:50%;background:#1b1d1f;color:var(--white);padding:0;font-size:23px;line-height:1;box-shadow:0 4px 18px #000b}
 .nom-music-toggle.active{border-color:var(--orange);color:var(--orange)}
 .nom-music-panel{position:fixed;left:10px;right:10px;bottom:142px;z-index:69;background:#1b1d1f;border:1px solid #383838;border-radius:17px;padding:12px;box-shadow:0 8px 30px #000b;max-width:540px;margin:auto;max-height:65vh;overflow-y:auto}
-.nom-music-panel.minimized{bottom:82px;padding:8px 12px;max-height:none;overflow:visible}
+.nom-music-panel.closed{left:-10000px;right:auto;bottom:0;visibility:visible;pointer-events:none}
 .nom-music-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .nom-music-panel input{width:100%;box-sizing:border-box;background:#101112;color:#f5f5f2;border:1px solid #454545;border-radius:10px;padding:11px;margin:8px 0}
 .nom-music-panel button{border:1px solid #555;border-radius:999px;padding:8px 11px;background:#282a2c;color:#f5f5f2}
 .nom-music-panel button.primary{background:var(--orange);color:#111;border:0;font-weight:700}
-.nom-music-panel.minimized .nom-music-expanded{display:none}
-.nom-music-panel.minimized #nomSpotifyEmbed{display:block!important;height:1px;overflow:hidden;position:absolute;left:-10000px}
+.nom-music-panel.closed .nom-music-expanded{display:block}
+.nom-music-panel.closed #nomSpotifyEmbed{display:block!important}
 #nomSpotifyEmbed{margin-top:10px;overflow:hidden;border-radius:12px;min-height:0}
 #nomSpotifyEmbed iframe{width:100%;height:152px;max-width:100%;border:0;border-radius:12px}
 .nom-music-result{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #383838}
@@ -451,8 +451,8 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 
 </main><div id="placeDetailOverlay" class="detail-overlay" role="dialog" aria-modal="true" aria-hidden="true" onclick="if(event.target===this)closePlaceDetail()"><div class="detail-topbar"><button class="detail-back" type="button" onclick="closePlaceDetail()" aria-label="Back to places">← <span>Back</span></button><span class="eyebrow">NOM DISCOVERY</span><button class="detail-close" type="button" onclick="closePlaceDetail()" aria-label="Close">×</button></div><div class="detail-body" id="placeDetailBody"></div></div><div id="workMediaLightbox" class="work-lightbox hidden" role="dialog" aria-modal="true" aria-label="Full-size portfolio media" onclick="if(event.target===this)closeWorkMediaViewer()"><button class="work-lightbox-close" type="button" onclick="closeWorkMediaViewer()" aria-label="Close">×</button><div id="workMediaLightboxContent"></div></div><section id="nomChatOverlay" class="nom-chat-overlay hidden" role="dialog" aria-modal="true" aria-label="NOM private chat"><div class="nom-chat-top"><div class="nom-chat-identity"><span id="nomChatAvatar"></span><div><strong id="nomChatTitle">NOM messages</strong><div class="small" id="nomChatSubtitle">Private member conversation</div></div></div><button class="text-button" type="button" onclick="closeNomChat()">Close</button></div><div class="nom-chat-messages" id="nomChatMessages"></div><form class="nom-chat-compose" onsubmit="event.preventDefault();sendNomMessage()"><textarea id="nomChatInput" maxlength="4000" placeholder="Write a message..." required></textarea><button class="primary" id="nomChatSend" type="submit">Send</button></form></section>
 
-<div id="nomMusicPanel" class="nom-music-panel minimized" aria-label="NOM music player">
- <div class="nom-music-head"><strong>♫ NOM MUSIC <span style="color:var(--lime);font-size:10px">· APPLE + SPOTIFY</span></strong><button type="button" id="nomMusicExpand" onclick="toggleNomMusicPanel()">Expand</button></div>
+<div id="nomMusicPanel" class="nom-music-panel closed" aria-label="NOM music player">
+ <div class="nom-music-head"><strong>NOM MUSIC</strong><button type="button" id="nomMusicExpand" aria-label="Close music" onclick="toggleNomMusicPanel()">×</button></div>
  <div id="nomMusicMessage" class="small" style="margin-top:7px">Search songs and artists. Play an Apple preview or listen in Spotify without leaving NOM.</div>
  <div class="nom-music-expanded">
   <form onsubmit="event.preventDefault();searchNomMusic()"><input id="nomMusicSearch" type="search" maxlength="120" placeholder="Search songs, artists or albums..." aria-label="Search music"><button class="primary" type="submit">Search</button></form>
@@ -461,7 +461,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
  </div>
  <div id="nomSpotifyEmbed"></div>
 </div>
-<button id="nomMusicToggle" class="nom-music-toggle active" type="button" onclick="toggleNomMusicPanel()">♫ Music</button>
+<button id="nomMusicToggle" class="nom-music-toggle" type="button" aria-label="Open music" title="Music" onclick="toggleNomMusicPanel()">♫</button>
 <nav class="bottom-nav">
   <button class="nav-item active" data-page="home" onclick="showPage('home')"><span>⌂</span>Home</button>
   <button class="nav-item" data-page="explore" onclick="showPage('explore')"><span>⌕</span>Explore</button>
@@ -1680,7 +1680,7 @@ async function initialiseApp(){
 
 
 let nomMusicResults=[],nomMusicAudio=null;
-function toggleNomMusicPanel(force){const panel=document.getElementById("nomMusicPanel"),button=document.getElementById("nomMusicToggle");const minimized=typeof force==="boolean"?!force:!panel.classList.contains("minimized");panel.classList.toggle("minimized",minimized);document.getElementById("nomMusicExpand").textContent=minimized?"Expand":"Minimize";button.classList.toggle("active",!minimized);button.textContent=minimized?"♫ Music":"♫ Music on";}
+function toggleNomMusicPanel(force){const panel=document.getElementById("nomMusicPanel"),button=document.getElementById("nomMusicToggle");const open=typeof force==="boolean"?force:panel.classList.contains("closed");panel.classList.toggle("closed",!open);button.classList.toggle("active",open);button.setAttribute("aria-label",open?"Close music":"Open music");}
 function asyncNomMusicSearchUrl(term){return "https://itunes.apple.com/search?term="+encodeURIComponent(term)+"&media=music&entity=song&limit=24&country=ID";}
 let nomMusicJsonpCounter=0;
 function loadAppleMusicJsonp(url){
