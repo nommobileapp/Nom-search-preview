@@ -1180,9 +1180,9 @@ async function publishNomPost(){
   try{
     let postType="text";
     const mediaTypes=new Set(infos.map(info=>info.mediaType));
-    if(mediaTypes.size>1)postType="mixed";
-    else if(mediaTypes.size===1)postType=Array.from(mediaTypes)[0];
-    const insertPayload={user_id:currentUser.id,body:body||null,post_type:postType,place_name:placeName||null,place_location:placeLocation||null,category,status:"published"};
+    if(mediaTypes.size>1||(body&&mediaTypes.size>0))postType="mixed";
+    else if(mediaTypes.size===1){const onlyType=Array.from(mediaTypes)[0];postType=onlyType==="image"?"photo":onlyType;}
+    const insertPayload={user_id:currentUser.id,body:body||(files.length?"Shared a moment on NOM.":null),post_type:postType,place_name:placeName||null,place_location:placeLocation||null,category,status:"published"};
     const {data:post,error:postError}=await supabaseClient.from("nom_posts").insert(insertPayload).select("id").single();
     if(postError)throw postError;
     createdPostId=post.id;
