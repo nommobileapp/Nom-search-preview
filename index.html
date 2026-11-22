@@ -1134,6 +1134,7 @@ async
 const NOM_COMMUNITY_BUCKET="nom-community-media";
 const NOM_COMMUNITY_MAX_FILE=50*1024*1024;
 function selectNomShareType(type){
+  if(!currentUser){showNomShareComposer();return;}
   showNomShareComposer();
   const body=document.getElementById("nomShareBody");
   const place=document.getElementById("nomSharePlace");
@@ -1191,12 +1192,14 @@ async function publishNomPost(){
   const invalid=files.find((file,index)=>!file.size||file.size>NOM_COMMUNITY_MAX_FILE||!infos[index].supported);
   if(invalid){message.textContent=invalid.size>NOM_COMMUNITY_MAX_FILE?invalid.name+" exceeds NOM's 50 MB limit.":"Please choose supported JPG, PNG, WebP, MP4, MOV, WebM, MP3, M4A, AAC, WAV or OGG files.";return;}
   if(!supabaseClient){message.textContent="NOM is temporarily unavailable. Please try again.";return;}
-  const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
-  if(sessionError||!session){message.textContent="Your session has expired. Please log in again.";return;}
   const progress=document.getElementById("nomShareProgress"),bar=document.getElementById("nomShareProgressBar");
   const uploaded=[];button.disabled=true;button.textContent="Publishing...";progress.classList.remove("hidden");bar.style.width="0%";message.textContent="Preparing your post...";
   let createdPostId=null;
   try{
+    const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+    if(sessionError)throw sessionError;
+    const session=sessionData?.session;
+    if(!session)throw new Error("Your session has expired. Please log in again.");
     let postType="text";
     const mediaTypes=new Set(infos.map(info=>info.mediaType));
     if(mediaTypes.size>1||(body&&mediaTypes.size>0))postType="mixed";
