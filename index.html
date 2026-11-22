@@ -571,7 +571,7 @@ async function openMemberPortfolio(userId){
     const url=supabaseClient.storage.from(WORK_MEDIA_BUCKET).getPublicUrl(x.object_path).data.publicUrl;
     const caption=x.caption?'<span class="work-public-tile-caption">'+escapeHTML(x.caption)+'</span>':'';
     if(x.media_type==="photo")return '<button class="work-public-tile" type="button" aria-label="Open portfolio photo" onclick="openWorkMediaViewer(\'photo\',\''+escapeHTML(url)+'\')"><img src="'+escapeHTML(url)+'" alt="Portfolio photo" loading="lazy">'+caption+'</button>';
-    if(x.media_type==="video")return '<button class="work-public-tile video" type="button" aria-label="Play portfolio video fullscreen" onclick="openWorkMediaViewer(\'video\',\''+escapeHTML(url)+'\')"><video muted playsinline preload="metadata" src="'+escapeHTML(url)+'"></video>'+caption+'</button>';
+    if(x.media_type==="video")return '<button class="work-public-tile video" type="button" aria-label="Play portfolio video fullscreen" onclick="openWorkMediaViewer(\'video\',\''+escapeHTML(url)+'\')"><video muted playsinline preload="auto" onloadeddata="if(this.currentTime===0)this.currentTime=0.1" onseeked="this.pause()" src="'+escapeHTML(url)+'"></video>'+caption+'</button>';
     return '<button class="work-public-tile audio" type="button" aria-label="Play portfolio audio" onclick="openWorkMediaViewer(\'audio\',\''+escapeHTML(url)+'\')"><span class="audio-symbol">♫</span><span>Audio</span>'+caption+'</button>';
   }).join("");
   const username=p.username||"nom-member";
