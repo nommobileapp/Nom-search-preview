@@ -734,9 +734,6 @@ function placeCard(place){
         <h3>${escapeHTML(place.name)}</h3>
         <p>${escapeHTML(place.description)}</p>
         <p class="small">${escapeHTML(place.location)} · ${escapeHTML(place.price || "")}</p>
-        <button class="save-button" onclick='event.stopPropagation();toggleSave("${escapeHTML(String(place.id))}")'>
-          ${isSaved ? "♥ Saved" : "♡ Save place"}
-        </button>
       </div>
     </article>
   `;
@@ -921,9 +918,7 @@ function nomSearchResultRow(kind,title,subtitle,image,action,saveId){
  const safeImage=typeof image==="string"&&image.startsWith("https://")?image:"";
  const fallback=kind.toLowerCase().includes("place")?"🍽️":"👤";
  const thumb=safeImage?'<img class="nom-search-thumb" src="'+escapeHTML(safeImage)+'" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><span class="nom-search-thumb nom-search-placeholder" aria-hidden="true" style="display:none">'+fallback+'</span>':'<span class="nom-search-thumb nom-search-placeholder" aria-hidden="true">'+fallback+'</span>';
- const saved=saveId!==undefined&&savedIds.map(String).includes(String(saveId));
- const saveButton=saveId!==undefined?'<button type="button" class="save-button nom-search-save" data-save-id="'+escapeHTML(String(saveId))+'" onclick="event.stopPropagation();saveNomSearchPlace(this.dataset.saveId)">'+(saved?"♥ Saved":"♡ Save")+'</button>':"";
- return '<div class="nom-search-result" '+(action?'onclick="'+action+'" role="button" tabindex="0"':'')+'>'+thumb+'<div class="nom-search-result-copy"><div class="nom-search-kind">'+escapeHTML(kind)+'</div><strong>'+escapeHTML(title||"NOM result")+'</strong><small>'+escapeHTML(subtitle||"")+'</small></div>'+saveButton+'</div>';
+ return '<div class="nom-search-result" '+(action?'onclick="'+action+'" role="button" tabindex="0"':'')+'>'+thumb+'<div class="nom-search-result-copy"><div class="nom-search-kind">'+escapeHTML(kind)+'</div><strong>'+escapeHTML(title||"NOM result")+'</strong><small>'+escapeHTML(subtitle||"")+'</small></div></div>';
 }
 function renderNOMSearchResults(){
  const source=nomSearchSource,tab=document.getElementById(source+"SearchTabs"),target=document.getElementById(source+"SearchResults");
