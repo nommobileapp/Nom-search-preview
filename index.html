@@ -773,7 +773,10 @@ function setExploreView(mode){
  const mapMode=exploreDisplayMode==="map";
  document.getElementById("nomExploreMap")?.classList.toggle("hidden",!mapMode);
  document.getElementById("nomMapMessage")?.classList.toggle("hidden",!mapMode);
- const cards=document.getElementById("explorePlaces");if(cards)cards.style.display=mapMode?"none":"";
+ const searching=document.getElementById("exploreUniversalSearch")&&!document.getElementById("exploreUniversalSearch").classList.contains("hidden");
+ const cards=document.getElementById("explorePlaces");if(cards)cards.style.display=(mapMode||searching)?"none":"";
+ const categories=document.querySelector("#explorePage .categories");if(categories)categories.style.display=(mapMode||searching)?"none":"";
+ ["importBaliButton","photosOnlyButton","placesMessage"].forEach(id=>{const item=document.getElementById(id);if(item)item.style.display=(mapMode||searching)?"none":"";});
  const listButton=document.getElementById("nomExploreListButton"),mapButton=document.getElementById("nomExploreMapButton");
  if(listButton){listButton.classList.toggle("active",!mapMode);listButton.setAttribute("aria-pressed",String(!mapMode));}
  if(mapButton){mapButton.classList.toggle("active",mapMode);mapButton.setAttribute("aria-pressed",String(mapMode));}
@@ -824,8 +827,8 @@ function renderPlaces(list=currentResults){
   const explore=document.getElementById("explorePlaces");
   if(home)home.innerHTML=empty;
   if(explore)explore.innerHTML=empty;
-}
   renderExploreMap(safeList);
+}
 
 
 function togglePhotosOnly(){
