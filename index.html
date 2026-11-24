@@ -178,6 +178,25 @@ p{color:var(--muted);line-height:1.5}
   margin:12px 0;
 }
 .feed-card p{margin-bottom:8px}
+
+/* SHARE TO NOM — universal community composer */
+.nom-share-card{background:linear-gradient(145deg,#241c17,#191919 72%);border:1px solid #493020;border-radius:20px;padding:20px;margin:18px 0}
+.nom-share-card h3{font-size:19px;margin:7px 0}
+.nom-share-card p{margin:6px 0 14px}
+.nom-share-composer{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:18px;margin:14px 0}
+.nom-share-composer textarea,.nom-share-composer input,.nom-share-composer select{width:100%;background:#111;color:white;border:1px solid var(--border);border-radius:12px;padding:13px;margin:7px 0 13px}
+.nom-share-composer textarea{min-height:120px;resize:vertical;line-height:1.5}
+.nom-share-composer label{font-size:12px;color:var(--muted)}
+.nom-share-types{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.nom-share-types button{font-size:11px;color:var(--lime);background:#252b1b;border:1px solid #414c2a;border-radius:20px;padding:7px 10px}
+.nom-share-preview{display:flex;gap:9px;overflow-x:auto;margin:8px 0 14px}
+.nom-share-preview img,.nom-share-preview video{width:94px;height:94px;object-fit:cover;border-radius:12px;background:#111}
+.nom-share-preview audio{width:220px;max-width:80vw}
+.nom-share-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}
+.nom-share-actions button{margin:0;position:relative;z-index:2;pointer-events:auto;touch-action:manipulation}
+#nomSharePublish{min-height:48px;min-width:140px;position:relative;z-index:5;pointer-events:auto;touch-action:manipulation}
+.nom-share-hint{font-size:11px;color:var(--muted);line-height:1.5}
+
 .form-card{
   background:var(--panel);
   border:1px solid var(--border);
@@ -226,7 +245,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 .community-upload input,.community-upload textarea,.community-upload select{width:100%;background:#111;color:white;border:1px solid var(--border);border-radius:11px;padding:13px;margin:7px 0 13px}
 .community-upload input[type=file]{padding:11px;font-size:12px}
 .community-post{background:var(--panel);border:1px solid var(--border);border-radius:17px;padding:14px;margin:12px 0;overflow:hidden}
-.community-post img,.community-post video{width:100%;max-height:300px;object-fit:cover;border-radius:12px;display:block}.community-post video{background:#080808}
+.community-post .community-post-media{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;object-position:center;border-radius:12px;margin:8px 0;background:#080808}
 .community-post .post-meta{font-size:11px;color:var(--lime);margin:9px 0 4px}
 .community-post .post-author{font-size:12px;color:var(--orange)}
 .community-post .post-status{font-size:11px;color:var(--lime);margin-top:8px}
@@ -273,6 +292,14 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 .nom-music-result-info strong{display:block;font-size:13px}
 .nom-music-result-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 @media(min-width:700px){.nom-music-panel{left:auto;right:20px;width:400px}}
+.nom-share-types{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.nom-share-types button{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:var(--lime);border-radius:999px;padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:.08em}.nom-share-types button:active{background:rgba(255,125,45,.2);border-color:var(--orange)}
+.nom-post-card{margin:14px 0;padding:16px;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.035)}
+.nom-post-card .post-author{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.nom-post-card .post-meta{font-size:.76rem;color:var(--lime);margin:8px 0}
+.nom-post-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;margin:10px 0;color:#f4f4f4}
+.nom-post-media{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;object-position:center;border-radius:12px;margin:10px 0;background:#080808}
+.nom-post-audio{display:block;width:100%;margin:12px 0}
+.nom-post-actions{display:flex;justify-content:flex-end;margin-top:12px}.nom-post-delete{border:1px solid rgba(255,125,45,.45);background:rgba(255,125,45,.08);color:#ff9a5b;border-radius:999px;padding:8px 13px;font-size:12px;font-weight:700}.nom-post-delete:disabled{opacity:.55}
 </style>
 </head>
 
@@ -330,7 +357,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
     <button class="secondary" id="importBaliButton" type="button" onclick="importBaliPlaces()">Save up to 100 Bali places to NOM</button>
   </div>
   <div style="display:flex;align-items:center;gap:9px;margin:8px 0 12px">
-    <button class="category active" id="photosOnlyButton" type="button" aria-pressed="true" onclick="togglePhotosOnly()">📷 Photos only: ON</button>
+    <button class="category" id="photosOnlyButton" type="button" aria-pressed="false" onclick="togglePhotosOnly()">📷 Photos only: OFF</button>
   </div>
   <div class="message" id="placesMessage"></div>
   <div class="cards" id="explorePlaces"></div>
@@ -340,20 +367,51 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 <section id="communityPage" class="hidden">
   <div class="eyebrow">NOM COMMUNITY</div><h1>Stories without borders.</h1>
   <p>Discover places shared by NOM members. Your discoveries can inspire someone's next journey.</p>
-  <div class="feed-card"><div class="eyebrow">SHARE WITH NOM</div><h3>Found somewhere special?</h3>
-    <p>Upload a place and your own photographs. Help the NOM community discover it.</p>
-    <button class="primary" type="button" onclick="showCommunityComposer()">＋ Share a place</button></div>
+  <div class="nom-share-card"><div class="eyebrow">YOUR NOM COMMUNITY</div><h3>What's happening on your journey?</h3>
+    <p>Share a moment, a story, a sound or somewhere worth discovering.</p>
+    <button class="primary" type="button" onclick="showNomShareComposer()">＋ Share to NOM</button>
+    <div class="nom-share-types" aria-label="Choose what to share"><button type="button" onclick="selectNomShareType('text')">TEXT</button><button type="button" onclick="selectNomShareType('image')">PHOTO</button><button type="button" onclick="selectNomShareType('video')">VIDEO</button><button type="button" onclick="selectNomShareType('audio')">AUDIO</button><button type="button" onclick="selectNomShareType('place')">PLACE</button></div>
+  </div>
+  <div class="nom-share-composer hidden" id="nomShareComposer">
+    <div class="eyebrow">SHARE TO NOM</div><h2 style="margin-top:7px">Create a post</h2>
+    <label for="nomShareBody">Your story</label>
+    <textarea id="nomShareBody" maxlength="3000" placeholder="Share what's on your mind..."></textarea>
+    <label for="nomShareCategory">Category</label>
+    <select id="nomShareCategory"><option>General</option><option>Travel</option><option>Food</option><option>Music</option><option>Work</option><option>Lifestyle</option></select>
+    <label for="nomSharePlace">Add a place (optional)</label>
+    <input id="nomSharePlace" maxlength="160" placeholder="Place name">
+    <input id="nomShareLocation" maxlength="200" placeholder="City, island or country">
+    <label for="nomShareMedia">Add photos, video or audio</label>
+    <input id="nomShareMedia" type="file" accept="image/*,video/*,.mp3,.m4a,.mp4,.aac,.wav,.wave,.caf,.aif,.aiff,.flac,.ogg,.oga,.opus,.amr,.3gp,.mid,.midi" multiple onchange="previewNomShareMedia()">
+    <div class="nom-share-preview" id="nomSharePreview"></div>
+    <p class="nom-share-hint">Up to 4 files · 50 MB per file. You choose what to share. Posts are published to the NOM community.</p>
+    <div class="nom-share-actions">
+      <button class="primary" id="nomSharePublish" type="button" onclick="handleNomPublishTap(event)">Publish post</button>
+      <button class="secondary" type="button" onclick="hideNomShareComposer()">Cancel</button>
+    </div>
+    <div class="message" id="nomShareMessage" aria-live="polite"></div>
+    <div class="work-progress hidden" id="nomShareProgress"><span id="nomShareProgressBar"></span></div>
+  </div>
   <div class="form-card community-upload hidden" id="communityComposer">
     <h2>Share a place</h2><p class="small">Upload up to 4 photos and/or videos (JPG, PNG, WebP, MP4, MOV or WebM · max 50 MB per file).</p>
     <label for="communityTitle">Place name</label><input id="communityTitle" maxlength="100" placeholder="e.g. A hidden beach in Bali">
     <label for="communityLocation">Location</label><input id="communityLocation" maxlength="160" placeholder="Town, island or country">
     <label for="communityCategory">Category</label><select id="communityCategory"><option>Nature</option><option>Food</option><option>Beach</option><option>Culture</option><option>Stay</option><option>Experience</option></select>
     <label for="communityDescription">Your story / description</label><textarea id="communityDescription" rows="4" maxlength="1200" placeholder="What makes this place worth discovering?"></textarea>
+    <button class="secondary" type="button" id="communityAiEnhance" onclick="enhanceCommunityDescription()">✨ Enhance with NOM AI</button>
+    <div class="message" id="communityAiMessage" aria-live="polite"></div>
+    <div class="feed-card hidden" id="communityAiPreview" style="margin:8px 0;padding:13px">
+      <div class="eyebrow">NOM AI SUGGESTION</div>
+      <p id="communityAiSuggestion" style="color:#eee;white-space:pre-wrap"></p>
+      <button class="primary" type="button" onclick="acceptCommunityAiSuggestion()">Use suggestion</button>
+      <button class="secondary" type="button" onclick="dismissCommunityAiSuggestion()">Keep my original</button>
+    </div>
     <label for="communityMedia">Photos and videos</label><input id="communityMedia" type="file" accept="image/*,video/*" multiple>
     <button class="primary" id="communitySubmit" type="button" onclick="submitCommunityPlace()">Submit place</button>
     <button class="secondary" type="button" onclick="hideCommunityComposer()">Cancel</button>
     <div class="message" id="communityMessage"></div><div class="work-progress hidden" id="communityUploadProgress"><span id="communityUploadProgressBar"></span></div><p class="small">Your place and photos appear publicly in Explore and Community as soon as you share them.</p>
   </div>
+  <h2>Latest from NOM</h2><div id="nomPostsFeed"><p class="small">Loading NOM posts...</p></div>
   <h2>Discoveries from the community</h2><div id="communityFeed"><p class="small">Loading community discoveries...</p></div>
   <h2>Your submissions</h2><div id="myCommunitySubmissions"><p class="small">Log in to see your submissions.</p></div>
   <div class="feed-card nom-work-entry" role="link" tabindex="0" aria-label="Open NOM Work" onclick="showPage('work')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showPage('work')}"><div class="eyebrow">NOM WORK</div><h3>Work. Travel. Live.</h3>
@@ -410,7 +468,7 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
       <label>Profile picture (optional)</label>
       <div class="avatar-upload">
         <img id="avatarPreview" class="avatar-preview hidden" alt="Profile picture preview">
-        <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose profile picture" onchange="handleRegistrationAvatar(this)">
+        <input id="avatarFile" type="file" accept="image/*" aria-label="Choose profile picture" onchange="handleRegistrationAvatar(this)">
         <p class="small">Choose a JPG, PNG or WebP image. NOM resizes it for your profile (max 2 MB after processing).</p>
       </div>
       <label>Display name</label>
@@ -474,18 +532,34 @@ hr{border:0;border-top:1px solid var(--border);margin:18px 0}
 </nav>
 
 <script>
+/* Music state is initialized before any startup code can access it. */
+var nomMusicResults=[];
+var nomMusicAudio=null;
+
 /* NOM SUPABASE CONNECTION */
+/* Share constants must initialize before any startup callbacks can run. */
+const NOM_COMMUNITY_BUCKET="nom-community-media";
+window.NOM_COMMUNITY_MAX_FILE=50*1024*1024;
+
 const SUPABASE_URL = "https://ojzzroswtzjnnoigjpuc.supabase.co";
 const SUPABASE_KEY = "sb_publishable_xc8mdZ1eb8XtEyxtn3tfXg_DnqNNfjI";
 
 const supabaseClient = window.supabase?.createClient
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage,
+        storageKey: "nom-lifestyle-auth"
+      }
+    })
   : null;
 
 let currentUser = null;
 let authMode = "signup";
 let selectedCategory = "All";
-let photosOnly = true;
+let photosOnly = false;
 
 /* PLACES — loaded from the Supabase catalogue */
 let places = [];
@@ -845,7 +919,7 @@ async function loadNomPlaces(query,category){
     try{
       const {data,error}=await supabaseClient.rpc("search_places",{
         search_text:query,
-        category_filter:category
+        category_filter:(!category || category==="All") ? null : category
       });
       if(!error && Array.isArray(data) && data.length)return data;
       if(error)console.warn("NOM RPC search unavailable; using direct catalogue fallback:",error.message);
@@ -918,7 +992,9 @@ async function searchPlaces(query){
       : "Loading live discoveries...";
 
     try{
-      const url = SUPABASE_URL + "/functions/v1/nom-place-search?q=" + encodeURIComponent(value) + "&category=" + encodeURIComponent(selectedCategory) + "&limit=30";
+      const liveParams = new URLSearchParams({q:value,limit:"30"});
+      if(categoryAtRequest && categoryAtRequest!=="All")liveParams.set("category",categoryAtRequest);
+      const url = SUPABASE_URL + "/functions/v1/nom-place-search?" + liveParams.toString();
       const response = await fetch(url,{headers:{apikey:SUPABASE_KEY}});
       if(!response.ok) throw new Error("External place search unavailable");
       const payload = await response.json();
@@ -1073,7 +1149,158 @@ async function importBaliPlaces(){
 }
 
 
-async function showCommunityComposer(){
+async 
+/* UNIVERSAL SHARE TO NOM — writes to the new nom_posts system */
+function selectNomShareType(type){
+  if(!currentUser){showPage("profile");showAuth("signup");return;}
+  const composer=document.getElementById("nomShareComposer");
+  composer.classList.remove("hidden");
+  document.getElementById("nomShareMessage").textContent="";
+  const body=document.getElementById("nomShareBody");
+  const place=document.getElementById("nomSharePlace");
+  const media=document.getElementById("nomShareMedia");
+  const accepts={image:"image/*",video:"video/*",audio:".mp3,.m4a,.mp4,.aac,.wav,.wave,.caf,.aif,.aiff,.flac,.ogg,.oga,.opus,.amr,.3gp,.mid,.midi,audio/*"};
+  media.accept=accepts[type]||"image/*,video/*,.mp3,.m4a,.mp4,.aac,.wav,.wave,.caf,.aif,.aiff,.flac,.ogg,.oga,.opus,.amr,.3gp,.mid,.midi";
+  const mediaLabel=document.querySelector('label[for="nomShareMedia"]');
+  if(mediaLabel)mediaLabel.textContent=type==="audio"?"Choose an audio file":type==="image"?"Choose photos":type==="video"?"Choose a video":"Add photos, video or audio";
+  composer.scrollIntoView({behavior:"smooth",block:"start"});
+  if(type==="text"){body.focus();return;}
+  if(type==="place"){place.focus();return;}
+  // On iPhone, let the member tap the visible native file input.
+  // Avoid a scripted input.click(), which Safari may silently block.
+  media.scrollIntoView({behavior:"smooth",block:"center"});
+}
+function showNomShareComposer(){
+  if(!currentUser){showPage("profile");showAuth("signup");return;}
+  const composer=document.getElementById("nomShareComposer");
+  composer.classList.remove("hidden");
+  document.getElementById("nomShareMessage").textContent="";
+  composer.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function hideNomShareComposer(){
+  document.getElementById("nomShareComposer").classList.add("hidden");
+}
+function getNomShareFileInfo(file){
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  const mime=(file.type||"").toLowerCase();
+  const types={
+    jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",heic:"image/heic",heif:"image/heif",
+    mp4:"video/mp4",webm:"video/webm",mov:"video/quicktime",m4v:"video/x-m4v",
+    mp3:"audio/mpeg",m4a:"audio/mp4",aac:"audio/aac",wav:"audio/wav",ogg:"audio/ogg",oga:"audio/ogg",webm:"audio/webm",
+    caf:"audio/x-caf",aif:"audio/aiff",aiff:"audio/aiff",flac:"audio/flac",opus:"audio/opus",amr:"audio/amr","3gp":"audio/3gpp",mid:"audio/midi",midi:"audio/midi"
+  };
+  const allowed=new Set(["image/jpeg","image/png","image/webp","image/heic","image/heif","video/mp4","video/webm","video/quicktime","video/x-m4v","audio/mpeg","audio/mp4","audio/aac","audio/wav","audio/x-wav","audio/ogg","audio/webm","audio/x-caf","audio/aiff","audio/flac","audio/opus","audio/amr","audio/3gpp","audio/midi"]);
+  const contentType=types[ext]||(allowed.has(mime)?mime:(mime.startsWith("audio/")&&allowed.has(mime)?mime:""));
+  const mediaType=contentType.startsWith("image/")?"image":contentType.startsWith("video/")?"video":contentType.startsWith("audio/")?"audio":"";
+  return {contentType,mediaType,supported:allowed.has(contentType)&&!!mediaType};
+}
+function previewNomShareMedia(){
+  const files=Array.from(document.getElementById("nomShareMedia").files||[]);
+  const preview=document.getElementById("nomSharePreview");
+  preview.innerHTML="";
+  files.slice(0,4).forEach(file=>{
+    const info=getNomShareFileInfo(file),url=URL.createObjectURL(file);
+    let node;
+    if(info.mediaType==="image"){node=document.createElement("img");node.alt=file.name;node.src=url;}
+    else if(info.mediaType==="video"){node=document.createElement("video");node.src=url;node.muted=true;node.playsInline=true;}
+    else if(info.mediaType==="audio"){node=document.createElement("audio");node.src=url;node.controls=true;}
+    else{node=document.createElement("div");node.textContent=file.name;}
+    preview.appendChild(node);
+  });
+}
+async function publishNomPost(){
+  const message=document.getElementById("nomShareMessage"),button=document.getElementById("nomSharePublish"),body=document.getElementById("nomShareBody").value.trim(),placeName=document.getElementById("nomSharePlace").value.trim(),placeLocation=document.getElementById("nomShareLocation").value.trim(),category=document.getElementById("nomShareCategory").value,files=Array.from(document.getElementById("nomShareMedia").files||[]);
+  if(!currentUser){message.textContent="Please log in to share with NOM.";return;}
+  if(!body&&!placeName&&!files.length){message.textContent="Add a story, a place or some media before publishing.";return;}
+  if(body.length>3000){message.textContent="Your post is too long. Please keep it under 3,000 characters.";return;}
+  if(files.length>4){message.textContent="Please choose up to 4 files.";return;}
+  const infos=files.map(getNomShareFileInfo);
+  const invalid=files.find((file,index)=>!file.size||file.size>window.NOM_COMMUNITY_MAX_FILE||!infos[index].supported);
+  if(invalid){message.textContent=invalid.size>NOM_COMMUNITY_MAX_FILE?invalid.name+" exceeds NOM's 50 MB limit.":"Please choose a supported photo, video or audio file. iPhone HEIC/HEIF photos are supported.";return;}
+  if(!supabaseClient){message.textContent="NOM is temporarily unavailable. Please try again.";return;}
+  const progress=document.getElementById("nomShareProgress"),bar=document.getElementById("nomShareProgressBar");
+  const uploaded=[];button.disabled=true;button.textContent="Publishing...";progress.classList.remove("hidden");bar.style.width="0%";message.textContent="Preparing your post...";
+  let createdPostId=null,uploadStage="checking your login";
+  try{
+    const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+    if(sessionError)throw sessionError;
+    const session=sessionData?.session;
+    if(!session)throw new Error("Your session has expired. Please log in again.");
+    uploadStage="creating your post";
+    let postType="text";
+    const mediaTypes=new Set(infos.map(info=>info.mediaType));
+    if(mediaTypes.size>1||(body&&mediaTypes.size>0))postType="mixed";
+    else if(mediaTypes.size===1){const onlyType=Array.from(mediaTypes)[0];postType=onlyType==="image"?"photo":onlyType;}
+    const insertPayload={user_id:currentUser.id,body:body||(files.length?"Shared a moment on NOM.":null),post_type:postType,place_name:placeName||null,place_location:placeLocation||null,category,status:"published"};
+    const {data:post,error:postError}=await supabaseClient.from("nom_posts").insert(insertPayload).select("id").single();
+    if(postError)throw postError;
+    createdPostId=post.id;
+    const attachments=[];
+    for(let i=0;i<files.length;i++){
+      const file=files[i],info=infos[i],ext=(file.name.split(".").pop()||"file").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin",path=currentUser.id+"/"+crypto.randomUUID()+"."+ext;
+      uploadStage="uploading "+info.mediaType+" file "+(i+1)+" of "+files.length;
+      message.textContent="Uploading "+info.mediaType+" "+(i+1)+" of "+files.length+"...";
+      if(file.size>6*1024*1024){
+        await uploadNomResumable(file,path,session,NOM_COMMUNITY_BUCKET,pct=>{bar.style.width=pct+"%";message.textContent="Uploading media "+(i+1)+" of "+files.length+" · "+pct+"%";},info.contentType);
+      }else{
+        const {error:uploadError}=await supabaseClient.storage.from(NOM_COMMUNITY_BUCKET).upload(path,file,{cacheControl:"3600",upsert:false,contentType:info.contentType});
+        if(uploadError)throw uploadError;
+      }
+      uploaded.push(path);
+      attachments.push({post_id:createdPostId,user_id:currentUser.id,storage_path:path,media_type:info.mediaType,mime_type:info.contentType});
+      bar.style.width=Math.round(((i+1)/Math.max(files.length,1))*100)+"%";
+    }
+    if(attachments.length){
+      uploadStage="saving the media attachment";
+      const {error:mediaError}=await supabaseClient.from("nom_post_media").insert(attachments);
+      if(mediaError)throw mediaError;
+    }
+    document.getElementById("nomShareBody").value="";
+    document.getElementById("nomSharePlace").value="";
+    document.getElementById("nomShareLocation").value="";
+    document.getElementById("nomShareMedia").value="";
+    document.getElementById("nomSharePreview").innerHTML="";
+    message.textContent="Your post is published. Welcome to the next chapter of NOM.";
+    bar.style.width="100%";
+    await loadNomPostsFeed();
+  }catch(error){
+    console.error("NOM post publishing:",error);
+    if(createdPostId)await supabaseClient.from("nom_posts").delete().eq("id",createdPostId);
+    if(uploaded.length)await supabaseClient.storage.from(NOM_COMMUNITY_BUCKET).remove(uploaded);
+    const detail=[error?.message,error?.code?"Code: "+error.code:"",error?.details,error?.hint].filter(Boolean).join(" · ");
+    message.textContent="Failed while "+uploadStage+": "+(detail||"Unknown upload error. Please try again.");
+    progress.classList.add("hidden");bar.style.width="0%";
+  }finally{
+    button.disabled=false;button.textContent="Publish post";
+  }
+}
+
+// One publish entry point with synchronous entry diagnostics.
+function handleNomPublishTap(event){
+  if(event)event.preventDefault();
+  const button=document.getElementById("nomSharePublish");
+  const status=document.getElementById("nomShareMessage");
+  if(!button||button.disabled)return;
+  button.disabled=true;
+  button.textContent="Checking...";
+  if(status)status.textContent="Publish tap received. Checking your post...";
+  try{
+    const task=publishNomPost();
+    if(task&&typeof task.then==="function")task.catch(error=>{
+      console.error("NOM publish handler:",error);
+      if(status)status.textContent="Publish stopped: "+(error?.message||String(error));
+      button.disabled=false;
+      button.textContent="Publish post";
+    });
+  }catch(error){
+    console.error("NOM publish handler:",error);
+    if(status)status.textContent="Publish could not start: "+(error?.message||String(error));
+    button.disabled=false;
+    button.textContent="Publish post";
+  }
+}
+
+function showCommunityComposer(){
   if(!currentUser){showPage("profile");showAuth("signup");return;}
   document.getElementById("communityComposer").classList.remove("hidden");
   document.getElementById("communityMessage").textContent="";
@@ -1084,8 +1311,8 @@ function communityPostCard(post,own=false){
   nomDetailItems[String(post.id)]={id:post.id,kind:"community",name:post.title,description:post.description,location:post.location,category:post.category,photos,videos,author:post.username?"@"+post.username:(post.display_name||"NOM member")};
   const status="Published on NOM";
   const authorIdentity='<span class="nom-identity-row">'+nomAvatarMarkup(post.avatar_url,post.username||"NOM member",true)+'<span>'+escapeHTML(post.username?"@"+post.username:(post.display_name||"NOM member"))+'</span></span>';
-  const photoPreviews=photos.map(url=>'<img src="'+escapeHTML(url)+'" alt="'+escapeHTML(post.title)+'" loading="lazy">').join("");
-  const videoPreviews=videos.map(url=>'<video controls playsinline preload="metadata" src="'+escapeHTML(url)+'" onclick="event.stopPropagation()"></video>').join("");
+  const photoPreviews=photos.map(url=>'<img class="community-post-media" src="'+escapeHTML(url)+'" alt="'+escapeHTML(post.title)+'" loading="lazy">').join("");
+  const videoPreviews=videos.map(url=>'<video class="community-post-media" controls playsinline preload="metadata" src="'+escapeHTML(url)+'" onclick="event.stopPropagation()"></video>').join("");
   const mediaCount=photos.length+videos.length;
   return '<article class="community-post" role="button" tabindex="0" data-detail-id="'+escapeHTML(String(post.id))+'" onclick="openPlaceDetail(this.dataset.detailId)" onkeydown="if(event.key===\'Enter\'){openPlaceDetail(this.dataset.detailId)}">'+photoPreviews+videoPreviews+
     '<div class="post-meta">'+escapeHTML(post.category||"DISCOVERY")+' · '+escapeHTML(post.location||"")+'</div>'+
@@ -1094,8 +1321,86 @@ function communityPostCard(post,own=false){
     (own?'<div class="post-status">'+status+'</div>':"")+(mediaCount?'<p class="small">'+photos.length+' photos · '+videos.length+' videos shared</p>':"")+'</article>';
 }
 
+async function deleteNomPost(postId,button){
+  if(!currentUser){alert("Please log in to delete your post.");return;}
+  if(!postId||!window.confirm("Delete this post? This will permanently remove your post and its attached media."))return;
+  if(button){button.disabled=true;button.textContent="Deleting...";}
+  try{
+    const {data:post,error:checkError}=await supabaseClient.from("nom_posts").select("id").eq("id",postId).eq("user_id",currentUser.id).maybeSingle();
+    if(checkError)throw checkError;
+    if(!post)throw new Error("This post is no longer available or does not belong to your account.");
+    const {data:media,error:mediaError}=await supabaseClient.from("nom_post_media").select("storage_path").eq("post_id",postId).eq("user_id",currentUser.id);
+    if(mediaError)throw mediaError;
+    const {data:deleted,error:deleteError}=await supabaseClient.from("nom_posts").delete().eq("id",postId).eq("user_id",currentUser.id).select("id").maybeSingle();
+    if(deleteError)throw deleteError;
+    if(!deleted)throw new Error("NOM could not confirm deletion. Please refresh and try again.");
+    let cleanupWarning="";
+    const paths=(media||[]).map(item=>item.storage_path).filter(Boolean);
+    if(paths.length){
+      const {error:storageError}=await supabaseClient.storage.from(NOM_COMMUNITY_BUCKET).remove(paths);
+      if(storageError){console.warn("NOM post media cleanup:",storageError);cleanupWarning=" The post was deleted, but some media files may need cleanup.";}
+    }
+    await loadNomPostsFeed();
+    if(cleanupWarning)alert("Your post was deleted."+cleanupWarning);
+  }catch(error){
+    console.error("NOM post deletion:",error);
+    alert("Could not delete this post: "+(error?.message||"Please try again."));
+    if(button){button.disabled=false;button.textContent="Delete post";}
+  }
+}
+
+async function loadNomPostsFeed(){
+  const feed=document.getElementById("nomPostsFeed");
+  if(!feed)return;
+  if(!supabaseClient){feed.innerHTML='<p class="small">NOM Community is temporarily unavailable. Please refresh.</p>';return;}
+  feed.innerHTML='<p class="small">Loading NOM posts...</p>';
+  try{
+    const {data:posts,error}=await supabaseClient.from("nom_posts")
+      .select("id,user_id,body,post_type,place_name,place_location,category,created_at")
+      .eq("status","published").order("created_at",{ascending:false}).limit(40);
+    if(error)throw error;
+    if(!posts?.length){feed.innerHTML='<p class="small">No moments shared yet. Be the first to post to NOM.</p>';return;}
+    const ids=posts.map(post=>post.id),userIds=[...new Set(posts.map(post=>post.user_id))];
+    const mediaResult=await supabaseClient.from("nom_post_media").select("post_id,storage_path,media_type,mime_type").in("post_id",ids).order("created_at",{ascending:true});
+    const media=mediaResult.error?[]:(mediaResult.data||[]);
+    if(mediaResult.error)console.warn("NOM post media:",mediaResult.error.message);
+    let profiles=[];
+    if(currentUser&&userIds.length){
+      const profileResult=await supabaseClient.from("profiles").select("id,username,display_name,avatar_url").in("id",userIds);
+      if(!profileResult.error)profiles=profileResult.data||[];
+      else console.warn("NOM post profiles:",profileResult.error.message);
+    }
+    const profileMap=Object.fromEntries(profiles.map(profile=>[profile.id,profile]));
+    const mediaMap={};
+    media.forEach(item=>{
+      if(!mediaMap[item.post_id])mediaMap[item.post_id]=[];
+      const url=supabaseClient.storage.from(NOM_COMMUNITY_BUCKET).getPublicUrl(item.storage_path).data.publicUrl;
+      mediaMap[item.post_id].push({...item,url});
+    });
+    feed.innerHTML=posts.map(post=>{
+      const profile=profileMap[post.user_id]||{},username=profile.username||profile.display_name||"NOM member";
+      const avatar=nomAvatarMarkup(profile.avatar_url||"",username,true);
+      const mediaHtml=(mediaMap[post.id]||[]).map(item=>{
+        if(item.media_type==="image")return '<img class="nom-post-media" src="'+escapeHTML(item.url)+'" alt="Photo shared on NOM" loading="lazy">';
+        if(item.media_type==="video")return '<video class="nom-post-media" controls playsinline preload="metadata" src="'+escapeHTML(item.url)+'"></video>';
+        if(item.media_type==="audio")return '<audio class="nom-post-audio" controls preload="metadata" src="'+escapeHTML(item.url)+'"></audio>';
+        return "";
+      }).join("");
+      const place=post.place_name?'<div class="post-meta">📍 '+escapeHTML(post.place_name)+(post.place_location?' · '+escapeHTML(post.place_location):"")+'</div>':"";
+      const date=new Date(post.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"});
+      const ownerActions=currentUser&&currentUser.id===post.user_id?'<div class="nom-post-actions"><button type="button" class="nom-post-delete" data-delete-post="'+escapeHTML(post.id)+'">Delete post</button></div>':"";
+      return '<article class="feed-card nom-post-card"><div class="post-author">'+avatar+'<span>'+escapeHTML(username)+'</span><span class="small"> · '+escapeHTML(date)+'</span></div><div class="post-meta">'+escapeHTML(post.category||"General")+' · '+escapeHTML(post.post_type||"text")+'</div>'+(post.body?'<p class="nom-post-body">'+escapeHTML(post.body)+'</p>':"")+place+mediaHtml+ownerActions+'</article>';
+    }).join("");
+    feed.querySelectorAll("[data-delete-post]").forEach(button=>button.addEventListener("click",()=>deleteNomPost(button.dataset.deletePost,button)));
+  }catch(error){
+    console.error("NOM Community feed:",error);
+    feed.innerHTML='<p class="small">Cannot access NOM Community right now. Please refresh and try again.</p>';
+  }
+}
+
 async function loadCommunityFeed(){
   const feed=document.getElementById("communityFeed"),mine=document.getElementById("myCommunitySubmissions");if(!feed||!mine)return;
+  loadNomPostsFeed();
   const {data:published,error}=await supabaseClient.from("community_posts").select("id,user_id,title,description,location,category,photo_urls,video_urls,username,display_name,status,created_at").eq("status","published").order("created_at",{ascending:false}).limit(40);
   const publishedAvatars=await getNomAvatarMap((published||[]).map(p=>p.user_id));
   (published||[]).forEach(p=>p.avatar_url=publishedAvatars[p.user_id]||"");
@@ -1119,6 +1424,50 @@ function getCommunityMediaInfo(file){
   const isVideo=!!videoTypes[ext]||validVideoMimes.includes(contentType);
   const supported=!!contentType&&(isVideo?validVideoMimes.includes(contentType):validImageMimes.includes(contentType));
   return {isVideo,contentType,supported};
+}
+
+let nomCommunityAiSuggestion = "";
+
+async function enhanceCommunityDescription(){
+  const input=document.getElementById("communityDescription");
+  const button=document.getElementById("communityAiEnhance");
+  const message=document.getElementById("communityAiMessage");
+  const preview=document.getElementById("communityAiPreview");
+  const suggestion=document.getElementById("communityAiSuggestion");
+  const text=(input?.value||"").trim();
+  if(!currentUser){message.textContent="Please log in to use NOM AI.";return;}
+  if(!text){message.textContent="Write your place description first.";return;}
+  if(!supabaseClient){message.textContent="NOM AI is temporarily unavailable.";return;}
+  button.disabled=true;button.textContent="✨ Improving your description...";message.textContent="NOM AI is preparing a suggestion...";
+  preview.classList.add("hidden");nomCommunityAiSuggestion="";
+  try{
+    const {data,error}=await supabaseClient.functions.invoke("nom-ai-enhance",{body:{text,style:"travel-story"}});
+    if(error)throw error;
+    if(!data?.enhancedText||typeof data.enhancedText!=="string")throw new Error(data?.error||"NOM AI did not return a suggestion. Please try again.");
+    nomCommunityAiSuggestion=data.enhancedText.trim();
+    suggestion.textContent=nomCommunityAiSuggestion;
+    preview.classList.remove("hidden");
+    message.textContent="Your suggestion is ready. Review it before using it.";
+  }catch(error){
+    console.error("NOM AI enhancement:",error);
+    message.textContent=error?.message||"NOM AI could not complete this request. Please try again.";
+  }finally{
+    button.disabled=false;button.textContent="✨ Enhance with NOM AI";
+  }
+}
+
+function acceptCommunityAiSuggestion(){
+  if(!nomCommunityAiSuggestion)return;
+  document.getElementById("communityDescription").value=nomCommunityAiSuggestion;
+  document.getElementById("communityAiPreview").classList.add("hidden");
+  document.getElementById("communityAiMessage").textContent="Suggestion added to your description. You can still edit it before publishing.";
+  nomCommunityAiSuggestion="";
+}
+
+function dismissCommunityAiSuggestion(){
+  nomCommunityAiSuggestion="";
+  document.getElementById("communityAiPreview").classList.add("hidden");
+  document.getElementById("communityAiMessage").textContent="Your original description is unchanged.";
 }
 
 async function submitCommunityPlace(){
@@ -1404,7 +1753,7 @@ function updateAuthForm(){
 async function handleRegistrationAvatar(input){
   const file=input.files?.[0],preview=document.getElementById("avatarPreview");
   if(!file){preview.classList.add("hidden");preview.removeAttribute("src");return;}
-  if(!["image/jpeg","image/png","image/webp"].includes(file.type)){input.value="";alert("Please choose a JPG, PNG or WebP image.");return;}
+  if(file.type&&!["image/jpeg","image/png","image/webp","image/heic","image/heif","image/avif"].includes(file.type)){input.value="";alert("Please choose a photo image. iPhone HEIC photos are supported when Safari can decode them.");return;}
   if(file.size>8*1024*1024){input.value="";alert("Please choose an image smaller than 8 MB.");return;}
   try{
     const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error("Could not read that image."));reader.readAsDataURL(file);});
@@ -1542,7 +1891,7 @@ async function submitAuth(){
         email,
         password,
         options:{
-          emailRedirectTo:"https://nommobileapp.github.io/nom-lifestyle-mockup/",
+          emailRedirectTo:"https://nommobileapp.github.io/NOM-Lifestyle-Development/",
           data:{
             display_name:displayName,
             username:username
@@ -1556,9 +1905,13 @@ async function submitAuth(){
         currentUser = data.user;
         message.textContent = "Account created successfully.";
         updateProfile();
-        await uploadPendingRegistrationAvatar(data.user);
+        try{
+          await uploadPendingRegistrationAvatar(data.user);
+        }catch(avatarError){
+          message.textContent = "Your account was created, but the profile picture could not be saved yet. You can try again after signing in: "+(avatarError.message||"Upload failed.");
+        }
       }else{
-        message.textContent = "Registration received. Please confirm your email. Your selected profile picture will be added when you sign in after confirmation.";
+        message.textContent = "Registration received. Please confirm your email. The confirmation link will return you to NOM, where your account and selected profile picture can finish setting up.";
       }
 
     }else{
@@ -1572,7 +1925,11 @@ async function submitAuth(){
       currentUser = data.user;
       message.textContent = "Login successful.";
       updateProfile();
-      await uploadPendingRegistrationAvatar(data.user);
+      try{
+        await uploadPendingRegistrationAvatar(data.user);
+      }catch(avatarError){
+        message.textContent = "You are signed in, but your profile picture could not be saved yet: "+(avatarError.message||"Upload failed.");
+      }
     }
 
   }catch(error){
@@ -1593,6 +1950,7 @@ function updateProfile(){
   if(currentUser){
     profileInfo.classList.add("hidden");
     loggedInPanel.classList.remove("hidden");
+    document.getElementById("logoutMessage").textContent="";
 
     const metadata = currentUser.user_metadata || {};
     const publicUsername = metadata.username ? "@" + metadata.username : "NOM MEMBER";
@@ -1629,40 +1987,45 @@ async function logout(){
   }
 }
 
-/* RESTORE LOGIN SESSION */
-async function initialiseApp(){
+/* RESTORE LOGIN SESSION
+   Keep the auth callback synchronous. Defer database and realtime work
+   until after Supabase has finished processing the session event. */
+function initialiseApp(){
   if(!supabaseClient){
     console.error("NOM: Supabase SDK did not load; public navigation remains available.");
     return;
   }
-  try{
-    const {data,error} = await supabaseClient.auth.getSession();
-    if(error) throw error;
 
-    currentUser = data.session ? data.session.user : null;
+  supabaseClient.auth.onAuthStateChange((event,session)=>{
+    if(!["INITIAL_SESSION","SIGNED_IN","SIGNED_OUT","TOKEN_REFRESHED","USER_UPDATED","PASSWORD_RECOVERY"].includes(event))return;
+
+    const previousUserId=currentUser?.id||null;
+    const eventUser=session?.user||null;
+    currentUser=eventUser;
+    const nextUserId=eventUser?.id||null;
+
     updateProfile();
-    if(currentUser){
-      startNomNotificationListener();
-      uploadPendingRegistrationAvatar(currentUser).catch(error=>console.warn("NOM avatar upload:",error.message));
-      loadSavedPlacesForUser(currentUser.id);
-    }else{
-      resetSavedPlacesForGuest();
-    }
 
-    supabaseClient.auth.onAuthStateChange((_event,session)=>{
-      const previousUserId=currentUser?.id||null;
-      currentUser = session ? session.user : null;
-      const nextUserId=currentUser?.id||null;
-      updateProfile();
-      if(currentUser){
-        loadSavedPlacesForUser(currentUser.id);
+    setTimeout(()=>{
+      /* Ignore stale queued work if another auth event has since changed user. */
+      if((currentUser?.id||null)!==nextUserId)return;
+
+      if(eventUser){
+        loadSavedPlacesForUser(eventUser.id);
         startNomNotificationListener();
-        setTimeout(()=>uploadPendingRegistrationAvatar(currentUser).catch(error=>console.warn("NOM avatar upload:",error.message)),0);
+        if(event==="INITIAL_SESSION"||event==="SIGNED_IN"){
+          uploadPendingRegistrationAvatar(eventUser).catch(error=>{
+            console.warn("NOM avatar upload:",error.message);
+            const message=document.getElementById("authMessage");
+            if(message)message.textContent="Your account is active, but the profile picture could not be saved yet. You can retry by signing in again: "+(error.message||"Upload failed.");
+          });
+        }
       }else{
         resetSavedPlacesForGuest();
         if(nomNotificationChannel){supabaseClient.removeChannel(nomNotificationChannel);nomNotificationChannel=null;}
         renderNomUnreadBadges(0);
       }
+
       if(previousUserId!==nextUserId){
         const ownMedia=document.getElementById("workPortfolioMedia");
         const publicPanel=document.getElementById("workPublicPortfolio");
@@ -1671,37 +2034,21 @@ async function initialiseApp(){
         if(publicPanel)publicPanel.classList.add("hidden");
         if(publicContent)publicContent.innerHTML="";
         const workPage=document.getElementById("workPage");
-        if(currentUser&&workPage&&!workPage.classList.contains("hidden"))openWork();
-        else if(!currentUser){
+        if(eventUser&&workPage&&!workPage.classList.contains("hidden"))openWork();
+        else if(!eventUser){
           document.getElementById("workMemberGate")?.classList.remove("hidden");
           document.getElementById("workMemberTools")?.classList.add("hidden");
           const directory=document.getElementById("workDirectory");
           if(directory)directory.innerHTML='<p class="small">Join NOM or log in to discover member portfolios.</p>';
         }
       }
-    });
-
-  }catch(error){
-    console.error("NOM authentication:",error.message);
-  }
+    },0);
+  });
 }
 
 
-let nomMusicResults=[],nomMusicAudio=null;
+
 function toggleNomMusicPanel(force){const panel=document.getElementById("nomMusicPanel"),button=document.getElementById("nomMusicToggle");const open=typeof force==="boolean"?force:panel.classList.contains("closed");panel.classList.toggle("closed",!open);button.classList.toggle("active",open);button.setAttribute("aria-label",open?"Close music":"Open music");}
-async function loadAppleMusicResults(term){
- const endpoint=SUPABASE_URL+"/functions/v1/nom-music-search?q="+encodeURIComponent(term);
- const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),18000);
- try{
-  const response=await fetch(endpoint,{method:"GET",mode:"cors",cache:"no-store",headers:{Accept:"application/json",apikey:SUPABASE_KEY},signal:controller.signal});
-  let data={};try{data=await response.json();}catch(_){throw new Error("NOM music search returned an unreadable response.");}
-  if(!response.ok)throw new Error(data.error||("NOM music search returned HTTP "+response.status));
-  if(!data||!Array.isArray(data.results))throw new Error("NOM music search returned an unexpected response.");
-  return data.results;
- }catch(error){if(error.name==="AbortError")throw new Error("Apple music search timed out.");throw error;}
- finally{clearTimeout(timeout);}
-}
 function parseNomSpotifyLink(value){
  const raw=String(value||"").trim();if(!raw)return null;
  let match=raw.match(/^spotify:(track|album|playlist|artist|episode|show):([A-Za-z0-9]+)$/i);
